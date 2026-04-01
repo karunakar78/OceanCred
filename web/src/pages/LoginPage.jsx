@@ -1,19 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import AnimatedBackground from '../components/AnimatedBackground';
 import Navbar from '../components/Navbar';
 import { login, register, verifyCreditPublic } from '../api';
 import { useToast } from '../context/ToastContext';
-
-const panelVariants = {
-  hidden: { opacity: 0, y: 24 },
-  visible: (i) => ({
-    opacity: 1,
-    y: 0,
-    transition: { delay: i * 0.08, duration: 0.5, ease: [0.16, 1, 0.3, 1] },
-  }),
-};
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -73,63 +63,66 @@ export default function LoginPage() {
   }
 
   return (
-    <>
+    <div className="login-page">
       <AnimatedBackground />
-      <Navbar brand="SeaCred //" />
+      <Navbar brand="SeaCred" />
       <div className="login-layout">
-        <motion.div
-          className="login-hero"
-          initial={{ opacity: 0, x: -28 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        >
-          <p className="hero-kicker">Marine plastic · Verified credits</p>
+        <div className="login-hero">
+          <p className="hero-kicker">Verified marine plastic credits</p>
           <h1 className="hero-title">
-            Trade ESG offsets with <span className="text-gradient">confidence</span>
+            Offset with <span className="hero-accent">traceability</span> you can prove
           </h1>
           <p className="hero-sub">
-            SeaCred connects coastal collectors with companies through transparent auctions and public
-            certificate verification.
+            SeaCred links coastal collectors and companies through transparent auctions, wallet settlement,
+            and public certificate verification—notions that stand up to audit.
           </p>
           <div className="hero-stats">
-            {['Live bidding', 'AI-verified lots', 'Public key lookup'].map((t, i) => (
-              <motion.span
-                key={t}
-                className="hero-pill"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.35 + i * 0.1 }}
-              >
+            {['Live marketplace', 'AI-verified consignments', 'Public key lookup'].map((t) => (
+              <span key={t} className="hero-pill">
                 {t}
-              </motion.span>
+              </span>
             ))}
           </div>
-        </motion.div>
+        </div>
 
         <div className="login-forms">
-          <motion.div
-            className="glass-panel login-form-wrapper"
-            custom={0}
-            variants={panelVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            <h2 className="form-title">{isLogin ? 'Secure Access' : 'Create Account'}</h2>
+          <div className="glass-panel login-form-wrapper">
+            <div className="auth-mode-toggle" role="tablist" aria-label="Account mode">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={isLogin}
+                className={isLogin ? 'is-active' : ''}
+                onClick={() => setIsLogin(true)}
+              >
+                Sign in
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={!isLogin}
+                className={!isLogin ? 'is-active' : ''}
+                onClick={() => setIsLogin(false)}
+              >
+                Register
+              </button>
+            </div>
+            <h2 className="form-title">{isLogin ? 'Welcome back' : 'Create your account'}</h2>
             <form onSubmit={handleAuth}>
               {!isLogin && (
                 <div className="form-group">
-                  <label>Company/Admin Name</label>
+                  <label>Company or admin name</label>
                   <input
                     type="text"
                     className="form-control"
-                    placeholder="Acme Corp"
+                    placeholder="Acme Corporation"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                   />
                 </div>
               )}
               <div className="form-group">
-                <label>Email Address</label>
+                <label>Work email</label>
                 <input
                   type="email"
                   className="form-control"
@@ -137,6 +130,7 @@ export default function LoginPage() {
                   placeholder="name@company.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
                 />
               </div>
               <div className="form-group">
@@ -145,9 +139,10 @@ export default function LoginPage() {
                   type="password"
                   className="form-control"
                   required
-                  placeholder="••••••••"
+                  placeholder="Enter password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  autoComplete={isLogin ? 'current-password' : 'new-password'}
                 />
               </div>
               <div className="form-group">
@@ -157,84 +152,69 @@ export default function LoginPage() {
                   <option value="admin">Admin</option>
                 </select>
               </div>
-              <motion.button
-                type="submit"
-                className="btn btn-primary btn-block"
-                disabled={submitting}
-                whileHover={{ scale: submitting ? 1 : 1.02 }}
-                whileTap={{ scale: submitting ? 1 : 0.98 }}
-              >
-                {submitting ? 'Authenticating...' : isLogin ? 'Continue to Portal' : 'Register Account'}
-              </motion.button>
+              <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
+                {submitting ? 'Please wait…' : isLogin ? 'Continue to portal' : 'Create account'}
+              </button>
             </form>
             <div className="form-footer">
               <p>
-                New to SeaCred?{' '}
+                {isLogin ? 'Need an account?' : 'Already registered?'}{' '}
                 <button type="button" className="link-cyan" onClick={() => setIsLogin(!isLogin)}>
-                  {isLogin ? 'Register Here' : 'Back to Login'}
+                  {isLogin ? 'Switch to register' : 'Back to sign in'}
                 </button>
               </p>
               <p className="demo-tip">
-                <strong className="text-success">Demo Tip:</strong> Use &apos;admin@seacred.com&apos; /
-                &apos;admin123&apos; as Admin role to view Dashboard instantly!
+                <strong className="text-success">Demo:</strong> sign in as Admin with{' '}
+                <code className="demo-code">admin@seacred.com</code> / <code className="demo-code">admin123</code>.
               </p>
             </div>
-          </motion.div>
+          </div>
 
-          <motion.div className="glass-panel verify-panel" custom={1} variants={panelVariants} initial="hidden" animate="visible">
-            <h3>Verify Public Credit</h3>
+          <div className="glass-panel verify-panel">
+            <p className="section-head__eyebrow" style={{ marginBottom: '0.5rem' }}>
+              Public lookup
+            </p>
+            <h3>Verify a credit certificate</h3>
             <p className="verify-copy">
-              Enter a Credit Key to publicly verify the authenticity, weight, and allotted company of a SeaCred
-              certificate.
+              Enter a credit key to confirm authenticity, weight, waste type, and the company to which the
+              certificate is allotted.
             </p>
             <div className="verify-row">
               <input
                 type="text"
                 className="form-control"
-                placeholder="e.g. 9F4E-2B1A-..."
+                placeholder="e.g. 9F4E-2B1A-…"
                 value={verifyKey}
                 onChange={(e) => setVerifyKey(e.target.value)}
               />
-              <motion.button
-                type="button"
-                className="btn btn-outline"
-                onClick={handleVerify}
-                disabled={verifyLoading}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                {verifyLoading ? '...' : 'Verify'}
-              </motion.button>
+              <button type="button" className="btn btn-outline" onClick={handleVerify} disabled={verifyLoading}>
+                {verifyLoading ? '…' : 'Verify'}
+              </button>
             </div>
             <div className="verify-result">
-              {verifyLoading && <p className="text-muted">Verifying...</p>}
+              {verifyLoading && <p className="text-muted">Checking registry…</p>}
               {verifyResult?.error && <p className="text-danger">{verifyResult.error}</p>}
               {verifyResult?.ok && (
-                <motion.div
-                  className="verify-success"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                >
-                  <h4 className="text-success">Verified Authentic</h4>
+                <div className="verify-success">
+                  <h4 className="text-success">Certificate verified</h4>
                   <p>
                     <strong>Weight:</strong> {verifyResult.payload.weight_kg} kg {verifyResult.payload.waste_type}
                   </p>
                   <p>
-                    <strong>Owner:</strong> {verifyResult.payload.allotted_to_company}
+                    <strong>Allotted to:</strong> {verifyResult.payload.allotted_to_company}
                   </p>
                   <p>
-                    <strong>Collected By:</strong> {verifyResult.payload.collected_by} at{' '}
-                    {verifyResult.payload.gps_location}
+                    <strong>Collected:</strong> {verifyResult.payload.collected_by} — {verifyResult.payload.gps_location}
                   </p>
                   <p className="text-muted verify-issued">
-                    Issued: {new Date(verifyResult.payload.issue_date).toLocaleDateString()}
+                    Issued {new Date(verifyResult.payload.issue_date).toLocaleDateString()}
                   </p>
-                </motion.div>
+                </div>
               )}
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

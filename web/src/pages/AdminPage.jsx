@@ -6,6 +6,11 @@ import Navbar from '../components/Navbar';
 import { fetchAPI, logout } from '../api';
 import { useToast } from '../context/ToastContext';
 
+const statsContainer = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.045 } },
+};
+
 export default function AdminPage() {
   const navigate = useNavigate();
   const { showToast } = useToast();
@@ -54,100 +59,124 @@ export default function AdminPage() {
     }
   }
 
-  async function simulateAdminClose(listingId) {
-    try {
-      const res = await fetchAPI(`/marketplace/${listingId}/close`, 'POST');
-      if (res.status === 'success') {
-        showToast(res.message, 'success');
-        loadAdminDashboard();
-      } else {
-        showToast(res.detail || res.message || 'Failed to close auction', 'danger');
-      }
-    } catch (e) {
-      showToast(e.message, 'danger');
-    }
-  }
-
-  async function simulateNewListing() {
-    try {
-      const res = await fetchAPI('/admin/simulate-auction', 'POST');
-      if (res.status === 'success') {
-        showToast(res.message, 'success');
-        loadAdminDashboard();
-      } else {
-        showToast(res.detail || 'Failed to generate listing', 'danger');
-      }
-    } catch (e) {
-      showToast(e.message, 'danger');
-    }
-  }
-
   return (
     <>
       <AnimatedBackground />
       <Navbar
-        brand="SeaCred Admin //"
+        admin
+        brand="SeaCred Admin"
         right={
           <motion.button type="button" className="btn btn-outline" onClick={handleLogout} whileTap={{ scale: 0.98 }}>
-            Secure Logout
+            Sign out
           </motion.button>
         }
       />
 
-      <div className="wrapper page-enter">
-        <motion.div className="dashboard-header" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-          <h1>Command Center</h1>
-          <p>Platform health, total metrics, and administration.</p>
-        </motion.div>
+      <div className="wrapper admin-dash page-enter">
+        <motion.header
+          className="admin-dash__intro"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="admin-dash__intro-text">
+            <p className="section-head__eyebrow">Platform operations</p>
+            <h1 className="admin-dash__title">Command center</h1>
+            <p className="admin-dash__lede">
+              Revenue, inventory, participant registry, and auction tooling for administrators.
+            </p>
+          </div>
+          <div className="admin-dash__intro-aside" aria-hidden>
+            <div className="admin-dash__intro-card">
+              <span className="admin-dash__intro-label">Live auctions</span>
+              <span className="admin-dash__intro-value">{stats?.active_auctions ?? '…'}</span>
+            </div>
+          </div>
+        </motion.header>
 
         <motion.div
-          className="stats-grid admin-stats"
+          className="admin-dash__kpis admin-stats"
           initial="hidden"
           animate="visible"
-          variants={{ visible: { transition: { staggerChildren: 0.05 } } }}
+          variants={statsContainer}
         >
           {[
-            { label: 'Total Revenue', value: stats ? `₹${stats.total_platform_revenue.toLocaleString()}` : '…', cls: 'text-success' },
-            { label: 'Credits Gen (kg)', value: stats ? `${stats.total_credits_generated_kg} kg` : '…', cls: 'text-cyan' },
-            { label: 'Active Auctions', value: stats?.active_auctions ?? '…', cls: 'text-danger' },
-            { label: 'Total Companies', value: stats?.total_companies ?? '…', cls: 'text-blue' },
-            { label: 'Total Fishermen', value: stats?.total_fishermen ?? '…', cls: 'text-muted' },
+            {
+              key: 'revenue',
+              label: 'Platform revenue',
+              value: stats ? `₹${stats.total_platform_revenue.toLocaleString()}` : '…',
+              cls: 'text-success',
+              tone: 'success',
+            },
+            {
+              key: 'credits',
+              label: 'Credits generated',
+              value: stats ? `${stats.total_credits_generated_kg} kg` : '…',
+              cls: 'text-cyan',
+              tone: 'cyan',
+            },
+            {
+              key: 'auctions',
+              label: 'Active auctions',
+              value: stats?.active_auctions ?? '…',
+              cls: 'text-danger',
+              tone: 'blue',
+            },
+            {
+              key: 'companies',
+              label: 'Companies',
+              value: stats?.total_companies ?? '…',
+              cls: 'text-blue',
+              tone: 'cyan',
+            },
+            {
+              key: 'fishermen',
+              label: 'Fishermen',
+              value: stats?.total_fishermen ?? '…',
+              cls: 'text-muted',
+              tone: 'success',
+            },
           ].map((s) => (
             <motion.div
-              key={s.label}
-              className="glass-card text-center stat-card"
-              variants={{ hidden: { opacity: 0, y: 14 }, visible: { opacity: 1, y: 0 } }}
+              key={s.key}
+              className={`admin-dash__kpi admin-dash__kpi--${s.tone} glass-card`}
+              variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}
             >
-              <p>{s.label}</p>
-              <h2 className={`stat-value ${s.cls}`}>{s.value}</h2>
+              <div className="admin-dash__kpi-icon" />
+              <div className="admin-dash__kpi-body">
+                <p className="admin-dash__kpi-label">{s.label}</p>
+                <h2 className={`admin-dash__kpi-value ${s.cls}`}>{s.value}</h2>
+              </div>
             </motion.div>
           ))}
         </motion.div>
 
-        <div className="grid two-col">
-          <motion.div className="glass-panel" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-            <h3 className="mb-1">Registered Companies</h3>
+        <section className="admin-dash__feeds" aria-label="Registry">
+          <motion.section className="admin-dash__feed glass-panel" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+            <div className="company-dash__feed-head">
+              <h2>Registered companies</h2>
+              <span className="company-dash__feed-badge">{companies ? companies.length : '—'}</span>
+            </div>
             <div className="scroll-panel admin-scroll">
-              {companies === null && <p className="text-muted">Loading companies...</p>}
-              {companies && companies.length === 0 && <p className="text-muted">No registered companies yet.</p>}
+              {companies === null && <p className="text-muted">Loading…</p>}
+              {companies && companies.length === 0 && <p className="text-muted">No companies yet.</p>}
               {companies &&
                 companies.map((c) => (
                   <div key={c.id} className="glass-card listing-card company-card">
-                    <div className="flex-between">
-                      <h4 className="text-blue">🏢 {c.name || 'Anonymous User'}</h4>
+                    <div className="flex-between gap-1">
+                      <h4 className="text-blue">{c.name || 'Anonymous'}</h4>
                       <span className={`badge ${c.is_active ? 'badge-active' : 'badge-closed'}`}>
                         {c.is_active ? 'Active' : 'Suspended'}
                       </span>
                     </div>
-                    <div className="flex-between mt-1">
+                    <div className="flex-between mt-1 gap-1 flex-wrap">
                       <p className="text-muted small">{c.email}</p>
                       <p className="small">
-                        GST: <strong>{c.gst_number || 'N/A'}</strong>
+                        GST <strong>{c.gst_number || '—'}</strong>
                       </p>
                     </div>
                     <div className="flex-between mt-1 admin-card-footer">
-                      <p>
-                        Wallet: <strong className="text-success">₹{c.wallet_balance.toLocaleString()}</strong>
+                      <p className="small">
+                        Wallet <strong className="text-success">₹{c.wallet_balance.toLocaleString()}</strong>
                       </p>
                       <button
                         type="button"
@@ -160,29 +189,37 @@ export default function AdminPage() {
                   </div>
                 ))}
             </div>
-          </motion.div>
+          </motion.section>
 
-          <motion.div className="glass-panel" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
-            <h3 className="mb-1">Registered Fishermen</h3>
+          <motion.section
+            className="admin-dash__feed glass-panel"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+          >
+            <div className="company-dash__feed-head">
+              <h2>Registered fishermen</h2>
+              <span className="company-dash__feed-badge">{fishermen ? fishermen.length : '—'}</span>
+            </div>
             <div className="scroll-panel admin-scroll">
-              {fishermen === null && <p className="text-muted">Loading fishermen...</p>}
-              {fishermen && fishermen.length === 0 && <p className="text-muted">No registered fishermen yet.</p>}
+              {fishermen === null && <p className="text-muted">Loading…</p>}
+              {fishermen && fishermen.length === 0 && <p className="text-muted">No fishermen yet.</p>}
               {fishermen &&
                 fishermen.map((f) => (
                   <div key={f.id} className="glass-card listing-card fish-card">
-                    <div className="flex-between">
-                      <h4 className="text-success">🎣 {f.name || 'Anonymous Fisherman'}</h4>
+                    <div className="flex-between gap-1">
+                      <h4 className="text-success">{f.name || 'Anonymous'}</h4>
                       <span className={`badge ${f.is_active ? 'badge-active' : 'badge-closed'}`}>
                         {f.is_active ? 'Active' : 'Suspended'}
                       </span>
                     </div>
-                    <div className="flex-between mt-1">
+                    <div className="flex-between mt-1 gap-1 flex-wrap">
                       <p className="text-muted small">{f.email}</p>
-                      <p className="small">Role: {f.role}</p>
+                      <p className="small">{f.role}</p>
                     </div>
                     <div className="flex-between mt-1 admin-card-footer">
-                      <p>
-                        Wallet Earnings: <strong className="text-success">₹{f.wallet_balance.toLocaleString()}</strong>
+                      <p className="small">
+                        Earnings <strong className="text-success">₹{f.wallet_balance.toLocaleString()}</strong>
                       </p>
                       <button
                         type="button"
@@ -195,64 +232,58 @@ export default function AdminPage() {
                   </div>
                 ))}
             </div>
-          </motion.div>
-        </div>
+          </motion.section>
+        </section>
 
         <motion.div
-          className="flex-between dashboard-header admin-marketplace-header"
+          className="admin-dash__market-head flex-between dashboard-header section-head admin-marketplace-header"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.1 }}
+          transition={{ delay: 0.08 }}
         >
           <div>
-            <h2>Admin Marketplace Simulation</h2>
-            <p>Force close current auctions or generate fresh listings to test bids instantly.</p>
+            <p className="section-head__eyebrow">Marketplace</p>
+            <h2>Marketplace controls</h2>
+            <p>Review live marketplace activity and auction status.</p>
           </div>
-          <motion.button
-            type="button"
-            className="btn btn-outline btn-cyan-outline"
-            onClick={simulateNewListing}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            Create Auction Simulation
-          </motion.button>
         </motion.div>
 
-        <div className="grid marketplace-grid">
-          {listings === null && <p className="text-muted">Loading active listings...</p>}
-          {listings && listings.length === 0 && <p>No active listings available right now.</p>}
+        <div className="grid marketplace-grid admin-dash__market-grid">
+          {listings === null && <p className="text-muted">Loading listings…</p>}
+          {listings && listings.length === 0 && <p className="text-muted">No active listings.</p>}
           {listings &&
             listings.map((item) => (
-              <motion.div
+              <motion.article
                 key={item.id}
                 className="glass-card listing-card"
-                initial={{ opacity: 0, y: 12 }}
+                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
               >
                 <div className="flex-between mb-1">
-                  <span className="badge badge-active">Active</span>
-                  <span className="text-muted">Listing #{item.id}</span>
+                  <span className="badge badge-active">Live</span>
+                  <span className="text-tertiary" style={{ fontSize: '0.75rem', fontWeight: 600 }}>
+                    #{item.id}
+                  </span>
                 </div>
                 <h3>
-                  {item.credit.weight} kg {item.credit.waste_type}
+                  {item.credit.weight} kg · {item.credit.waste_type}
                 </h3>
-                <p className="mt-1">📍 {item.credit.gps_location}</p>
-                <p>📅 {new Date(item.credit.collection_date).toLocaleDateString()}</p>
-                <div className="bid-box mt-1">
+                <div className="meta-row">
                   <p>
-                    Min Bid: <strong className="text-cyan">₹{item.min_price}</strong>
+                    <span className="meta-label">Location</span>
+                    <span>{item.credit.gps_location}</span>
+                  </p>
+                  <p>
+                    <span className="meta-label">Collected</span>
+                    <span>{new Date(item.credit.collection_date).toLocaleDateString()}</span>
                   </p>
                 </div>
-                <motion.button
-                  type="button"
-                  className="btn btn-primary mt-1 btn-block"
-                  onClick={() => simulateAdminClose(item.id)}
-                  whileTap={{ scale: 0.99 }}
-                >
-                  Force Close Auction
-                </motion.button>
-              </motion.div>
+                <div className="bid-box mt-1">
+                  <p>
+                    Floor price <strong className="text-cyan">₹{item.min_price}</strong>
+                  </p>
+                </div>
+              </motion.article>
             ))}
         </div>
       </div>
