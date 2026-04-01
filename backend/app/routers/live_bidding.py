@@ -4,6 +4,7 @@ import json
 
 router = APIRouter(tags=["Live Bidding WebSockets"])
 
+
 class ConnectionManager:
     def __init__(self):
         # Maps listing_id to a list of active websocket connections
@@ -16,15 +17,27 @@ class ConnectionManager:
         self.active_connections[listing_id].append(websocket)
 
     def disconnect(self, websocket: WebSocket, listing_id: int):
-        if listing_id in self.active_connections:
+        if listing_id not in self.active_connections:
+            return
+        try:
             self.active_connections[listing_id].remove(websocket)
-            if not self.active_connections[listing_id]:
-                del self.active_connections[listing_id]
+        except ValueError:
+            return
+        if not self.active_connections[listing_id]:
+            del self.active_connections[listing_id]
 
     async def broadcast(self, message: str, listing_id: int):
-        if listing_id in self.active_connections:
-            for connection in self.active_connections[listing_id]:
+        """Send to all subscribers; drop stale sockets so one closed tab does not break others."""
+        if listing_id not in self.active_connections:
+            return
+        stale: List[WebSocket] = []
+        for connection in list(self.active_connections[listing_id]):
+            try:
                 await connection.send_text(message)
+            except Exception:
+                stale.append(connection)
+        for ws in stale:
+            self.disconnect(ws, listing_id)
 
 manager = ConnectionManager()
 
@@ -57,7 +70,11 @@ async def websocket_endpoint(websocket: WebSocket, listing_id: int):
                 })
                 await manager.broadcast(broadcast_payload, listing_id)
             except Exception as e:
-                await websocket.send_text(f"Error processing bid data: {str(e)}")
+                try:
+                    await websocket.send_text(f"Error processing bid data: {str(e)}")
+                except Exception:
+                    # Client already disconnected; avoid "Cannot call send once close has been sent"
+                    pass
 
     except WebSocketDisconnect:
         manager.disconnect(websocket, listing_id)

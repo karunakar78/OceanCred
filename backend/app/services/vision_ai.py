@@ -2,16 +2,20 @@ import os
 import json
 import google.generativeai as genai
 from PIL import Image
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # ==============================================================================
-# PASTE YOUR GEMINI API KEY BELOW (Do not share this key publicly)
+# SECRETS LOADED FROM .ENV
 # ==============================================================================
-GOOGLE_API_KEY = "AIzaSyAMShFrVl8ViqcXUf6eV6ouvNnGRzKgQ1c"
+GOOGLE_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # ==============================================================================
 # TEST MODE: Set to True to allow random photos and bypass Gemini API strictly
 # ==============================================================================
-ENABLE_TEST_MODE = False
+ENABLE_TEST_MODE = True
 
 def analyze_waste_image(file_path: str) -> dict:
     """

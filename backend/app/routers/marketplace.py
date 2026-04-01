@@ -160,9 +160,9 @@ def close_auction(listing_id: int, db: Session = Depends(get_db)):
     db.add(cert)
     db.commit()
 
-    from ..email_utils import send_email_mock, generate_invoice_pdf
+    from ..email_utils import generate_invoice_pdf, send_email
 
-    # Email the winner
+    # Email the winner (uses preferred notification_email when set; real SMTP if .env configured)
     if winner.email_notifications_enabled:
         email_to = winner.notification_email or winner.email
         pdf_path = generate_invoice_pdf(
@@ -173,7 +173,7 @@ def close_auction(listing_id: int, db: Session = Depends(get_db)):
             date_str=datetime.utcnow().strftime("%Y-%m-%d"),
         )
         body = f"Congratulations {winner.name}!\n\nYou have won the auction for Listing #{listing.id}. Please find your ESG certificate invoice attached.\n\nThank you for trusting SeaCred."
-        send_email_mock(email_to, f"You Won Listing #{listing.id}!", body, pdf_path)
+        send_email(email_to, f"You Won Listing #{listing.id}!", body, pdf_path)
 
     # Notify losers
     all_bids = db.query(models.Bid).filter(models.Bid.listing_id == listing_id).all()
@@ -183,7 +183,7 @@ def close_auction(listing_id: int, db: Session = Depends(get_db)):
         if loser and loser.email_notifications_enabled:
             email_to = loser.notification_email or loser.email
             body = f"Hello {loser.name},\n\nUnfortunately, you were outbid on Listing #{listing.id} and the auction has closed.\n\nCheck out the live marketplace for more opportunities!"
-            send_email_mock(
+            send_email(
                 email_to, f"Auction Closed: Outbid on Listing #{listing.id}", body
             )
 
