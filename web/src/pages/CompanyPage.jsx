@@ -133,7 +133,7 @@ export default function CompanyPage() {
   useEffect(() => {
     loadCompanyDashboard();
     loadMarketplace();
-    const id = setInterval(loadMarketplace, 30000);
+    const id = setInterval(loadMarketplace, 5000);
     return () => clearInterval(id);
   }, [loadCompanyDashboard, loadMarketplace]);
 
@@ -349,7 +349,7 @@ export default function CompanyPage() {
               <p className="section-head__eyebrow">Marketplace</p>
               <h2 className="company-dash__market-title">Live auctions</h2>
               <p className="company-dash__market-sub">
-                Listings refresh every 30 seconds.
+                Listings refresh every 5 seconds.
               </p>
             </div>
           </div>

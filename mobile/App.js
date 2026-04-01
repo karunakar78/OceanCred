@@ -8,6 +8,7 @@ import {
   clearMarketplaceNotificationSnapshot,
   startMarketplaceNotificationsPoller,
 } from './src/services/marketplaceNotificationsPoller';
+import { registerExpoPushTokenForUser } from './src/services/pushRegistration';
 import LoginScreen from './src/screens/LoginScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import UploadScreen from './src/screens/UploadScreen';
@@ -82,6 +83,8 @@ export default function App() {
 
     (async () => {
       await ensureNotificationSetup();
+      if (cancelled) return;
+      await registerExpoPushTokenForUser(session.accessToken);
       if (cancelled) return;
       stopPoller = startMarketplaceNotificationsPoller(session.accessToken);
     })();

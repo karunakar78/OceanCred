@@ -1,10 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import { mobileApi } from '../api/mobileApi';
 import { notifyLocal } from './notifications';
 
 const SNAPSHOT_KEY = 'seacred_marketplace_notif_snapshot_v2';
-const POLL_MS = 45000;
+/** Poll while the app is in foreground (backup if push is unavailable). */
+const POLL_MS = 5000;
 
 export async function clearMarketplaceNotificationSnapshot() {
     try {
@@ -68,30 +69,7 @@ export function startMarketplaceNotificationsPoller(token) {
                 topTxId: topTx?.id || null,
             };
 
-            // New bid on current active listing
-            if (
-                prev &&
-                prev.activeListingId &&
-                snapshot.activeListingId === prev.activeListingId &&
-                prev.bidSignature &&
-                snapshot.bidSignature &&
-                snapshot.bidSignature !== prev.bidSignature
-            ) {
-                const prevParts = String(prev.bidSignature).split(':');
-                const nextParts = String(snapshot.bidSignature).split(':');
-                const prevCount = parseInt(prevParts[0], 10);
-                const nextCount = parseInt(nextParts[0], 10);
-                if (!Number.isNaN(nextCount) && nextCount > (Number.isNaN(prevCount) ? 0 : prevCount)) {
-                    const total = nextParts[2] !== 'x' ? nextParts[2] : null;
-                    await notifyLocal({
-                        title: 'New bid received',
-                        body: total
-                            ? `Top bid total ₹${Number(total).toLocaleString('en-IN')}. Open SeaCred to compare offers.`
-                            : 'Open SeaCred to see the latest offers.',
-                        data: { type: 'bid_received' },
-                    });
-                }
-            }
+            // New bids: server sends Expo Push (see backend place_bid). Polling here would duplicate alerts.
 
             // Listing was active; same id now cancelled (or no longer active and row is cancelled)
             const wasActiveId = prev?.activeListingId;
@@ -133,8 +111,15 @@ export function startMarketplaceNotificationsPoller(token) {
     tick();
     timer = setInterval(tick, POLL_MS);
 
+    const appSub = AppState.addEventListener('change', (next) => {
+        if (next === 'active' && !cancelled) {
+            tick();
+        }
+    });
+
     return () => {
         cancelled = true;
         if (timer) clearInterval(timer);
+        appSub.remove();
     };
 }

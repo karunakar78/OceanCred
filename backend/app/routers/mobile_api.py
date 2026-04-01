@@ -173,6 +173,8 @@ def update_profile(
         current_user.name = req.name
     if req.location:
         current_user.location = req.location
+    if req.expo_push_token is not None:
+        current_user.expo_push_token = req.expo_push_token.strip() or None
     db.commit()
     return {"success": True}
 

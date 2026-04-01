@@ -20,6 +20,12 @@ def migrate():
     except sqlite3.OperationalError as e:
         print(f"Skipping notification_email: {e}")
 
+    try:
+        cursor.execute("ALTER TABLE users ADD COLUMN expo_push_token VARCHAR")
+        print("Added expo_push_token column.")
+    except sqlite3.OperationalError as e:
+        print(f"Skipping expo_push_token: {e}")
+
     conn.commit()
     conn.close()
     print("Migration complete.")

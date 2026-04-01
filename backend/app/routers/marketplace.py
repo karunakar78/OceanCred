@@ -64,6 +64,29 @@ def place_bid(
     db.commit()
     db.refresh(new_bid)
 
+    # Fisherman gets a push when the app is backgrounded (Expo Push; token from mobile PATCH /profile)
+    try:
+        fisherman = (
+            db.query(models.User)
+            .filter(models.User.id == listing.credit.fisherman_id)
+            .first()
+        )
+        token = getattr(fisherman, "expo_push_token", None) if fisherman else None
+        if token:
+            from ..expo_push import send_expo_push_notification
+
+            send_expo_push_notification(
+                token,
+                title="New bid on your auction",
+                body=f"₹{bid.amount:,.0f} on listing #{listing_id}. Open SeaCred to review.",
+                data={
+                    "type": "bid_received",
+                    "listing_id": listing_id,
+                },
+            )
+    except Exception as e:
+        print(f"[place_bid] expo push skipped: {e}")
+
     return new_bid
 
 

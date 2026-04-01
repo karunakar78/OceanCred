@@ -40,6 +40,7 @@ class ProfileResponse(MobileUser):
 class ProfileUpdate(BaseModel):
     name: Optional[str] = None
     location: Optional[str] = None
+    expo_push_token: Optional[str] = None
 
 
 class ProfileOnboardingRequest(BaseModel):

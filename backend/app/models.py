@@ -27,6 +27,9 @@ class User(Base):
     
     is_active = Column(Boolean, default=True)
 
+    # Expo push token for mobile (bid alerts when app is backgrounded)
+    expo_push_token = Column(String, nullable=True)
+
     # Relationships
     credits = relationship("Credit", back_populates="fisherman", foreign_keys='Credit.fisherman_id')
     bids = relationship("Bid", back_populates="company")
