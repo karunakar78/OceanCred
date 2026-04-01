@@ -60,6 +60,7 @@ export const styles = StyleSheet.create({
 
     otpHint: { color: C.textSec, fontSize: 12, marginBottom: 14, textAlign: 'center' },
     otpRow: { flexDirection: 'row', justifyContent: 'space-between' },
+    otpRowWrap: { position: 'relative', minHeight: 48 },
     otpBox: {
         width: 42, height: 48, borderRadius: 10, backgroundColor: C.surface,
         borderWidth: 1, borderColor: C.border, alignItems: 'center', justifyContent: 'center',

@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { SafeAreaView, ScrollView, RefreshControl, View, Text, TextInput, TouchableOpacity } from 'react-native';
 import { styles } from '../styles';
 import { C } from '../theme';
 import { WaveHeader } from '../components/Shared';
 import { mobileApi } from '../api/mobileApi';
+import { clearAuctionNotifications, scheduleAuctionNotifications } from '../services/auctionNotificationScheduler';
 
 export default function MarketplaceScreen({ navigate, token }) {
     const [credits, setCredits] = useState('');
@@ -16,6 +17,7 @@ export default function MarketplaceScreen({ navigate, token }) {
     const [listingDetails, setListingDetails] = useState(null);
     const [walletCredits, setWalletCredits] = useState(0);
     const [refreshing, setRefreshing] = useState(false);
+    const lastScheduledListingRef = useRef(null);
 
     useEffect(() => {
         let ws = null;
@@ -62,6 +64,16 @@ export default function MarketplaceScreen({ navigate, token }) {
             mounted = false;
         };
     }, [token]);
+
+    useEffect(() => {
+        if (listed && listingId && listingDetails?.expires_at) {
+            scheduleAuctionNotifications(listingId, listingDetails.expires_at);
+            lastScheduledListingRef.current = listingId;
+        } else if (!listed && lastScheduledListingRef.current) {
+            clearAuctionNotifications(lastScheduledListingRef.current);
+            lastScheduledListingRef.current = null;
+        }
+    }, [listed, listingId, listingDetails?.expires_at]);
 
     const bids = useMemo(() => {
         const mapped = (listingDetails?.bids || []).map((b, i) => ({
@@ -117,6 +129,8 @@ export default function MarketplaceScreen({ navigate, token }) {
         try {
             setLoading(true);
             await mobileApi.cancelListing(token, listingId);
+            await clearAuctionNotifications(listingId);
+            lastScheduledListingRef.current = null;
             setListed(false);
             setListingDetails(null);
             setListingId(null);
@@ -132,6 +146,8 @@ export default function MarketplaceScreen({ navigate, token }) {
         try {
             setLoading(true);
             await mobileApi.acceptBid(token, listingId, bids[0].bidId);
+            await clearAuctionNotifications(listingId);
+            lastScheduledListingRef.current = null;
             setHint('Top bid accepted successfully.');
             setListed(false);
             setListingDetails(null);
@@ -172,7 +188,11 @@ export default function MarketplaceScreen({ navigate, token }) {
     return (
         <SafeAreaView style={styles.screen}>
             <WaveHeader title="Marketplace" subtitle="Live Auction — Credits" onBack={() => navigate('wallet')} />
-            <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 120 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}>
+            <ScrollView
+                style={{ flex: 1 }}
+                contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+            >
                 {!listed ? (
                     <>
                         <View style={styles.listingCard}>

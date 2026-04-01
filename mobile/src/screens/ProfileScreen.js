@@ -15,7 +15,30 @@ function formatShortDate(dateIso) {
     }
 }
 
-export default function ProfileScreen({ navigate, token, user, onLogout }) {
+/** Label + colors — Sold / Cancelled / Listed; verified-only credits show as Available (not "Verified"). */
+function uploadStatusPresentation(status) {
+    if (status === 'sold') {
+        return { label: 'Sold', bg: C.green + '20', color: C.green };
+    }
+    if (status === 'cancelled') {
+        return { label: 'Cancelled', bg: C.red + '20', color: C.red };
+    }
+    if (status === 'active' || status === 'pending' || status === 'listed') {
+        return { label: 'Listed', bg: C.amber + '20', color: C.amber };
+    }
+    return { label: 'Available', bg: C.cyan + '20', color: C.cyan };
+}
+
+function UploadStatusPill({ status }) {
+    const st = uploadStatusPresentation(status);
+    return (
+        <View style={[styles.statusPill, { backgroundColor: st.bg }]}>
+            <Text style={[styles.statusText, { color: st.color }]}>{st.label}</Text>
+        </View>
+    );
+}
+
+export default function ProfileScreen({ token, user, onLogout }) {
     const [profile, setProfile] = useState(null);
     const [uploads, setUploads] = useState([]);
     const [locationMessage, setLocationMessage] = useState('');
@@ -130,7 +153,7 @@ export default function ProfileScreen({ navigate, token, user, onLogout }) {
     return (
         <SafeAreaView style={styles.screen}>
             <WaveHeader title="Profile" subtitle={`${displayName} · ${displayLocation}`} />
-            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 120 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}>
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}>
                 <View style={styles.profileCard}>
                     <View style={styles.avatarRing}>
                         <Text style={styles.avatarText}>{initials.toUpperCase()}</Text>
@@ -169,58 +192,18 @@ export default function ProfileScreen({ navigate, token, user, onLogout }) {
                             <Text style={styles.historyType}>{u.waste_summary}</Text>
                             <Text style={styles.historyMeta}>{u.weight_kg} kg · {u.credits} credits</Text>
                         </View>
-                        <View
-                            style={[
-                                styles.statusPill,
-                                {
-                                    backgroundColor:
-                                        u.status === 'sold'
-                                            ? C.green + '20'
-                                            : u.status === 'cancelled'
-                                                ? C.red + '20'
-                                                : u.status === 'active' || u.status === 'pending' || u.status === 'listed'
-                                                    ? C.amber + '20'
-                                                    : C.cyan + '20',
-                                },
-                            ]}
-                        >
-                            <Text
-                                style={[
-                                    styles.statusText,
-                                    {
-                                        color:
-                                            u.status === 'sold'
-                                                ? C.green
-                                                : u.status === 'cancelled'
-                                                    ? C.red
-                                                    : u.status === 'active' || u.status === 'pending' || u.status === 'listed'
-                                                        ? C.amber
-                                                        : C.cyan,
-                                    },
-                                ]}
-                            >
-                                {u.status === 'sold'
-                                    ? 'Sold'
-                                    : u.status === 'cancelled'
-                                        ? 'Cancelled'
-                                        : u.status === 'active' || u.status === 'pending' || u.status === 'listed'
-                                            ? 'Listed'
-                                            : 'Verified'}
-                            </Text>
-                        </View>
+                        <UploadStatusPill status={u.status} />
                     </TouchableOpacity>
                 ))}
 
-                <TouchableOpacity style={styles.primaryBtn} onPress={() => navigate('upload')}>
-                    <Text style={styles.primaryBtnText}>📷  Upload New Waste →</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.secondaryBtn} onPress={onLogout}>
-                    <Text style={styles.secondaryBtnText}>Logout</Text>
-                </TouchableOpacity>
-
                 {!!locationMessage && <Text style={[styles.otpHint, { marginTop: 10, textAlign: 'center' }]}>{locationMessage}</Text>}
             </ScrollView>
+
+            <View style={{ padding: 16, backgroundColor: '#0b1120', borderTopWidth: 1, borderColor: '#1E293B' }}>
+                <TouchableOpacity style={[styles.secondaryBtn, { marginTop: 0 }]} onPress={onLogout}>
+                    <Text style={styles.secondaryBtnText}>Logout</Text>
+                </TouchableOpacity>
+            </View>
 
             <Modal
                 visible={!!selectedUpload}
@@ -256,43 +239,7 @@ export default function ProfileScreen({ navigate, token, user, onLogout }) {
 
                                 <View style={styles.modalRow}>
                                     <Text style={styles.modalLabel}>Status</Text>
-                                    <View style={[
-                                        styles.statusPill,
-                                        {
-                                            backgroundColor:
-                                                selectedUpload.status === 'sold'
-                                                    ? C.green + '20'
-                                                    : selectedUpload.status === 'cancelled'
-                                                        ? C.red + '20'
-                                                        : selectedUpload.status === 'active' || selectedUpload.status === 'pending' || selectedUpload.status === 'listed'
-                                                            ? C.amber + '20'
-                                                            : C.cyan + '20',
-                                        },
-                                    ]}>
-                                        <Text
-                                            style={[
-                                                styles.statusText,
-                                                {
-                                                    color:
-                                                        selectedUpload.status === 'sold'
-                                                            ? C.green
-                                                            : selectedUpload.status === 'cancelled'
-                                                                ? C.red
-                                                                : selectedUpload.status === 'active' || selectedUpload.status === 'pending' || selectedUpload.status === 'listed'
-                                                                    ? C.amber
-                                                                    : C.cyan,
-                                                },
-                                            ]}
-                                        >
-                                            {selectedUpload.status === 'sold'
-                                                ? 'Sold'
-                                                : selectedUpload.status === 'cancelled'
-                                                    ? 'Cancelled'
-                                                    : selectedUpload.status === 'active' || selectedUpload.status === 'pending' || selectedUpload.status === 'listed'
-                                                        ? 'Listed'
-                                                        : 'Verified'}
-                                        </Text>
-                                    </View>
+                                    <UploadStatusPill status={selectedUpload.status} />
                                 </View>
 
                                 {(selectedUpload.status === 'listed' || selectedUpload.status === 'active' || selectedUpload.status === 'pending') && selectedUpload.listing_id && (

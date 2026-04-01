@@ -67,7 +67,11 @@ export default function WalletScreen({ navigate, token }) {
     return (
         <SafeAreaView style={styles.screen}>
             <WaveHeader title="My Wallet" subtitle="Sea Plastic Credits" onBack={() => navigate('result')} />
-            <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 120 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}>
+            <ScrollView
+                style={{ flex: 1 }}
+                contentContainerStyle={{ padding: 16, paddingBottom: 24 }}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+            >
                 <View style={styles.balanceCard}>
                     <Text style={styles.balanceLabel}>Available Balance</Text>
                     <View style={styles.balanceRow}>
@@ -112,11 +116,13 @@ export default function WalletScreen({ navigate, token }) {
                         <Text style={styles.noticeText}>No wallet transactions yet.</Text>
                     </View>
                 )}
+            </ScrollView>
 
-                <TouchableOpacity style={[styles.primaryBtn, { marginTop: 24 }]} onPress={() => navigate('marketplace')}>
+            <View style={{ padding: 16, backgroundColor: '#0b1120', borderTopWidth: 1, borderColor: '#1E293B' }}>
+                <TouchableOpacity style={styles.primaryBtn} onPress={() => navigate('marketplace')}>
                     <Text style={styles.primaryBtnText}>List on Marketplace →</Text>
                 </TouchableOpacity>
-            </ScrollView>
+            </View>
         </SafeAreaView>
     );
 }

@@ -7,6 +7,10 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
+    KeyboardAvoidingView,
+    Platform,
+    Keyboard,
+    StyleSheet,
 } from 'react-native';
 import { styles } from '../styles';
 import { C } from '../theme';
@@ -19,6 +23,7 @@ export default function LoginScreen({ navigate, onAuthSuccess }) {
     const [loading, setLoading] = useState(false);
     const [hint, setHint] = useState('');
     const otpInputRef = useRef(null);
+    const scrollRef = useRef(null);
 
     const normalizedPhone = phone.replace(/\D/g, '');
 
@@ -30,6 +35,16 @@ export default function LoginScreen({ navigate, onAuthSuccess }) {
             }, 120);
             return () => clearTimeout(timer);
         }
+    }, [otpSent]);
+
+    useEffect(() => {
+        const onShow = () => {
+            if (otpSent) {
+                setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
+            }
+        };
+        const sub = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', onShow);
+        return () => sub.remove();
     }, [otpSent]);
 
     const handleSendOtp = async () => {
@@ -75,8 +90,20 @@ export default function LoginScreen({ navigate, onAuthSuccess }) {
 
     return (
         <SafeAreaView style={styles.screen}>
-            <StatusBar barStyle="light-content" backgroundColor={C.ocean} />
-            <ScrollView contentContainerStyle={styles.loginContainer}>
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+                style={{ flex: 1 }}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
+            >
+                <StatusBar barStyle="light-content" backgroundColor={C.ocean} />
+                <ScrollView
+                    ref={scrollRef}
+                    contentContainerStyle={[
+                        styles.loginContainer,
+                        otpSent && { justifyContent: 'flex-start', paddingTop: 12, paddingBottom: 48 },
+                    ]}
+                    keyboardShouldPersistTaps="handled"
+                >
                 <View style={styles.logoArea}>
                     <View style={styles.logoCircle}>
                         <Text style={styles.logoEmoji}>🌊</Text>
@@ -117,27 +144,26 @@ export default function LoginScreen({ navigate, onAuthSuccess }) {
                     ) : (
                         <>
                             <Text style={styles.otpHint}>OTP sent to +91 {phone}</Text>
-                            <View style={styles.otpRow}>
+                            <View style={[styles.otpRow, styles.otpRowWrap]}>
                                 {[0, 1, 2, 3, 4, 5].map((i) => (
-                                    <TouchableOpacity
-                                        key={i}
-                                        style={styles.otpBox}
-                                        activeOpacity={0.85}
-                                        onPress={() => otpInputRef.current?.focus()}
-                                    >
+                                    <View key={i} style={styles.otpBox}>
                                         <Text style={styles.otpDigit}>{otp[i] || ''}</Text>
-                                    </TouchableOpacity>
+                                    </View>
                                 ))}
+                                <TextInput
+                                    ref={otpInputRef}
+                                    style={[StyleSheet.absoluteFillObject, { opacity: 0.02 }]}
+                                    keyboardType="number-pad"
+                                    maxLength={6}
+                                    value={otp}
+                                    onChangeText={setOtp}
+                                    caretHidden
+                                    importantForAutofill="yes"
+                                    textContentType="oneTimeCode"
+                                    autoComplete={Platform.OS === 'android' ? 'sms-otp' : 'one-time-code'}
+                                    autoFocus
+                                />
                             </View>
-                            <TextInput
-                                ref={otpInputRef}
-                                style={{ position: 'absolute', opacity: 0, width: 1, height: 1 }}
-                                keyboardType="numeric"
-                                maxLength={6}
-                                value={otp}
-                                onChangeText={setOtp}
-                                autoFocus
-                            />
                             <TouchableOpacity style={[styles.primaryBtn, { marginTop: 20 }]} onPress={handleVerifyOtp}>
                                 <Text style={styles.primaryBtnText}>{loading ? 'Verifying...' : 'Verify & Enter →'}</Text>
                             </TouchableOpacity>
@@ -147,6 +173,7 @@ export default function LoginScreen({ navigate, onAuthSuccess }) {
                     {!!hint && <Text style={[styles.otpHint, { marginTop: 10 }]}>{hint}</Text>}
                 </View>
             </ScrollView>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 }

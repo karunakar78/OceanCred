@@ -20,6 +20,7 @@
       }
     },
     "android": {
+      "softwareKeyboardLayoutMode": "resize",
       "permissions": [
         "CAMERA",
         "ACCESS_FINE_LOCATION",
@@ -33,6 +34,16 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#0891b2",
+          "defaultChannel": "seacred-default"
+        }
+      ]
+    ]
   }
 }
