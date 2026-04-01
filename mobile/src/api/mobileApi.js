@@ -112,11 +112,13 @@ export const mobileApi = {
     updateProfile: (token, updates) => request('/profile', { method: 'PATCH', token, body: updates }),
     completeOnboarding: (token, payload) => request('/profile/onboarding', { method: 'POST', token, body: payload }),
 
-    uploadWaste: ({ token, photoFile, gps_lat, gps_lng, captured_at, device_hash }) => {
+    uploadWaste: ({ token, photoFile, gps_lat, gps_lng, locked_lat, locked_lng, captured_at, device_hash }) => {
         const formData = new FormData();
         formData.append('photo', photoFile);
         formData.append('gps_lat', String(gps_lat));
         formData.append('gps_lng', String(gps_lng));
+        formData.append('locked_lat', String(locked_lat));
+        formData.append('locked_lng', String(locked_lng));
         formData.append('captured_at', captured_at);
         formData.append('device_hash', device_hash);
 

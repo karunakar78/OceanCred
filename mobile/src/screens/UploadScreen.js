@@ -5,9 +5,11 @@ import * as Location from 'expo-location';
 import { styles } from '../styles';
 import { C } from '../theme';
 import { WaveHeader } from '../components/Shared';
+import LocationPicker from '../components/LocationPicker';
 import { mobileApi } from '../api/mobileApi';
 
 export default function UploadScreen({ navigate, token, onUploadComplete }) {
+    const [lockedCoords, setLockedCoords] = useState(null);
     const [captured, setCaptured] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
@@ -62,7 +64,7 @@ export default function UploadScreen({ navigate, token, onUploadComplete }) {
     };
 
     const handleSubmit = async () => {
-        if (!captured || !token || !photoFile || !coords || !capturedAt) return;
+        if (!captured || !token || !photoFile || !coords || !capturedAt || !lockedCoords) return;
 
         try {
             setSubmitting(true);
@@ -73,12 +75,14 @@ export default function UploadScreen({ navigate, token, onUploadComplete }) {
                 photoFile,
                 gps_lat: coords.lat,
                 gps_lng: coords.lng,
+                locked_lat: lockedCoords.lat,
+                locked_lng: lockedCoords.lng,
                 captured_at: capturedAt,
                 device_hash: `rn-device-${Date.now()}`,
             });
 
             if (onUploadComplete) {
-                onUploadComplete(response);
+                onUploadComplete({ ...response, coords });
             }
             navigate('result');
         } catch (e) {
@@ -88,9 +92,18 @@ export default function UploadScreen({ navigate, token, onUploadComplete }) {
         }
     };
 
+    if (!lockedCoords) {
+        return (
+            <SafeAreaView style={styles.screen}>
+                <WaveHeader title="Select Area" subtitle="Lock in your cleaning zone" onBack={() => navigate('profile')} />
+                <LocationPicker onLock={setLockedCoords} />
+            </SafeAreaView>
+        );
+    }
+
     return (
         <SafeAreaView style={styles.screen}>
-            <WaveHeader title="Upload Waste" subtitle="Photo + GPS + Time — tamper-proof" onBack={() => navigate('profile')} />
+            <WaveHeader title="Upload Waste" subtitle="Photo + GPS + Time — tamper-proof" onBack={() => setLockedCoords(null)} />
             <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
                 <View style={styles.viewfinder}>
                     {!captured ? (

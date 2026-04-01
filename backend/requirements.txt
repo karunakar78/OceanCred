@@ -8,3 +8,5 @@ bcrypt<4.1.0
 websockets
 python-multipart
 fpdf2
+google-generativeai
+pillow

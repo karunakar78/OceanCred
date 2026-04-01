@@ -10,6 +10,15 @@ from sqlalchemy.exc import SQLAlchemyError
 from .. import models, dependencies
 from ..database import get_db
 from ..schemas_mobile import *
+import math
+
+def haversine(lat1, lon1, lat2, lon2):
+    R = 6371.0 # Earth radius in km
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    a = math.sin(dlat / 2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return R * c
 
 router = APIRouter(tags=["Mobile API v1"])
 
@@ -200,22 +209,60 @@ def upload_waste(
     photo: UploadFile = File(...),
     gps_lat: float = Form(...),
     gps_lng: float = Form(...),
+    locked_lat: float = Form(...),
+    locked_lng: float = Form(...),
     captured_at: str = Form(...),
     device_hash: str = Form(...),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(dependencies.require_fisherman),
 ):
+    distance = haversine(locked_lat, locked_lng, gps_lat, gps_lng)
+    if distance > 1.0: # 1km threshold
+        return JSONResponse(
+            status_code=400,
+            content={
+                "error": {
+                    "code": "LOCATION_MISMATCH",
+                    "message": f"Photo taken too far from locked area ({round(distance, 2)}km mismatch).",
+                    "status": 400,
+                }
+            },
+        )
+
     import uuid
+    from ..services.vision_ai import analyze_waste_image
 
     os.makedirs("uploads", exist_ok=True)
     file_path = f"uploads/{uuid.uuid4()}_{photo.filename}"
     with open(file_path, "wb") as f:
         f.write(photo.file.read())
 
-    # Demo AI output
-    waste_type = random.choice(["Plastic Bottles", "Fishing Net", "Mixed Plastics"])
-    weight = round(random.uniform(1.0, 10.0), 2)
-    credits_amt = int(weight * 12)
+    # Real AI execution
+    ai_result = analyze_waste_image(file_path)
+    
+    if not ai_result.get("is_waste"):
+        # Cleanup uploaded file if rejected
+        try:
+            os.remove(file_path)
+        except Exception:
+            pass
+            
+        return JSONResponse(
+            status_code=400,
+            content={
+                "error": {
+                    "code": "NOT_WASTE",
+                    "message": "AI Analysis failed to detect valid sea waste in this photo.",
+                    "status": 400,
+                }
+            },
+        )
+
+    waste_type = ai_result.get("waste_type", "General Waste")
+    weight = round(ai_result.get("estimated_weight_kg", 0.0), 2)
+    
+    # User Request: 1kg = 5 credits explicitly
+    credits_amt = int(weight * 5)
 
     credit_obj = models.Credit(
         fisherman_id=current_user.id,

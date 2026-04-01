@@ -7,6 +7,7 @@ import { WaveHeader, Divider } from '../components/Shared';
 export default function ResultScreen({ navigate, uploadResult }) {
     const [refreshing, setRefreshing] = useState(false);
     const ai = uploadResult?.ai_result;
+    const coords = uploadResult?.coords;
 
     const handleRefresh = async () => {
         setRefreshing(true);
