@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import AnimatedBackground from '../components/AnimatedBackground';
 import Navbar from '../components/Navbar';
 import {
@@ -13,7 +12,26 @@ import { useToast } from '../context/ToastContext';
 import { useAuctionTimer } from '../hooks/useAuctionTimer';
 import { useListingSocket } from '../hooks/useListingSocket';
 
-function CompanyListingCard({ item, bidAmount, onBidAmount, onBid, onSimClose, showToast }) {
+function getMostRecentTimestamp(item, fields) {
+  for (const field of fields) {
+    const value = item?.[field];
+    if (!value) continue;
+    const ts = new Date(value).getTime();
+    if (!Number.isNaN(ts)) return ts;
+  }
+  return 0;
+}
+
+function sortRecentFirst(items, fields) {
+  return [...items].sort((a, b) => {
+    const aTs = getMostRecentTimestamp(a, fields);
+    const bTs = getMostRecentTimestamp(b, fields);
+    if (aTs !== bTs) return bTs - aTs;
+    return (b?.id || 0) - (a?.id || 0);
+  });
+}
+
+function CompanyListingCard({ item, bidAmount, onBidAmount, onBid, showToast }) {
   const scaledMinPrice = item.min_price * 1.1;
   const [highest, setHighest] = useState(scaledMinPrice);
   const timerLabel = useAuctionTimer(item.closes_at);
@@ -30,65 +48,58 @@ function CompanyListingCard({ item, bidAmount, onBidAmount, onBid, onSimClose, s
   useListingSocket(item.id, onSocketBid);
 
   return (
-    <motion.div
-      className="glass-card listing-card"
-      layout
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-    >
-      <div className="flex-between mb-1">
-        <span className="badge badge-active">Active</span>
-        <span className="text-muted">Listing #{item.id}</span>
+    <article className="auction-card">
+      <div className="auction-card__top">
+        <span className="auction-card__id">Listing #{item.id}</span>
+        <span className="badge badge-active">Open</span>
       </div>
-      <h3>
-        {item.credit.weight} kg {item.credit.waste_type}
+      <h3 className="auction-card__title">
+        {item.credit.weight} kg
+        <span className="auction-card__waste">{item.credit.waste_type}</span>
       </h3>
-      <p className="mt-1">📍 {item.credit.gps_location}</p>
-      <p>📅 {new Date(item.credit.collection_date).toLocaleDateString()}</p>
-      <p className="text-blue mt-1">
-        ⏱️ <span>{timerLabel}</span>
-      </p>
-      <div className="bid-box mt-1">
-        <p>
-          Min Bid: <strong className="text-cyan">₹{scaledMinPrice.toFixed(2)}</strong>
-        </p>
-        <p>
-          Current Highest:{' '}
-          <strong className="text-success bid-pulse">₹{typeof highest === 'number' ? highest.toFixed(2) : highest}</strong>
-        </p>
+      <dl className="auction-card__meta">
+        <div>
+          <dt>Location</dt>
+          <dd>{item.credit.gps_location}</dd>
+        </div>
+        <div>
+          <dt>Collected</dt>
+          <dd>{new Date(item.credit.collection_date).toLocaleDateString()}</dd>
+        </div>
+        <div>
+          <dt>Time left</dt>
+          <dd className="auction-card__timer">{timerLabel}</dd>
+        </div>
+      </dl>
+      <div className="auction-card__prices">
+        <div className="auction-card__price-block">
+          <span className="auction-card__price-label">Min bid</span>
+          <span className="auction-card__price auction-card__price--min">₹{scaledMinPrice.toFixed(2)}</span>
+        </div>
+        <div className="auction-card__price-block auction-card__price-block--high">
+          <span className="auction-card__price-label">Leading bid</span>
+          <span className="auction-card__price auction-card__price--high bid-pulse">
+            ₹{typeof highest === 'number' ? highest.toFixed(2) : highest}
+          </span>
+        </div>
       </div>
-      <div className="flex-between mt-1 listing-actions">
+      <div className="auction-card__bid-row">
         <input
           type="number"
-          className="form-control bid-input"
-          placeholder="Enter Bid"
+          className="form-control auction-card__bid-input"
+          placeholder="Your bid (INR)"
           min={(scaledMinPrice + 1).toFixed(2)}
           step="0.01"
           value={bidAmount}
           onChange={(e) => onBidAmount(item.id, e.target.value)}
         />
-        <motion.button
-          type="button"
-          className="btn btn-primary bid-btn"
-          onClick={() => onBid(item.id)}
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 0.97 }}
-        >
-          BID
-        </motion.button>
+        <button type="button" className="btn btn-primary auction-card__bid-btn" onClick={() => onBid(item.id)}>
+          Place bid
+        </button>
       </div>
-      <button type="button" className="btn btn-outline mt-1 btn-sim" onClick={() => onSimClose(item.id)}>
-        Simulate Auction Close (Time Up)
-      </button>
-    </motion.div>
+    </article>
   );
 }
-
-const stagger = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.06 } },
-};
 
 export default function CompanyPage() {
   const navigate = useNavigate();
@@ -150,21 +161,6 @@ export default function CompanyPage() {
     }
   }
 
-  async function handleSimClose(listingId) {
-    try {
-      const res = await fetchAPI(`/marketplace/${listingId}/close`, 'POST');
-      if (res.status === 'success') {
-        showToast(res.message, 'success');
-        loadCompanyDashboard();
-        loadMarketplace();
-      } else {
-        showToast(res.detail || res.message || 'Failed to close auction', 'danger');
-      }
-    } catch (e) {
-      showToast(e.message, 'danger');
-    }
-  }
-
   async function topupWallet() {
     const amount = window.prompt('Enter amount to deposit into wallet:');
     if (!amount || isNaN(amount)) return;
@@ -209,150 +205,212 @@ export default function CompanyPage() {
     setBidInputs((prev) => ({ ...prev, [id]: value }));
   }
 
+  const kpis = [
+    {
+      key: 'wallet',
+      label: 'Wallet balance',
+      value: dashboard ? `₹${dashboard.wallet_balance.toLocaleString()}` : '…',
+      hint: 'Available to bid',
+      tone: 'success',
+    },
+    {
+      key: 'credits',
+      label: 'Credits purchased',
+      value: dashboard ? String(dashboard.total_credits_purchased_count) : '…',
+      hint: 'Certificates won',
+      tone: 'cyan',
+    },
+    {
+      key: 'spent',
+      label: 'Total spent',
+      value: dashboard ? `₹${dashboard.total_amount_spent.toLocaleString()}` : '…',
+      hint: 'Lifetime spend',
+      tone: 'blue',
+    },
+  ];
+
+  const notificationFeed = notifications
+    ? sortRecentFirst(notifications, ['created_at', 'updated_at'])
+    : null;
+  const transactionFeed = transactions
+    ? sortRecentFirst(transactions, ['created_at', 'updated_at', 'purchased_at', 'transaction_date'])
+    : null;
+
   return (
     <>
       <AnimatedBackground />
       <Navbar
-        brand="SeaCred //"
+        brand="SeaCred"
         right={
-          <div className="nav-actions">
-            <motion.button type="button" className="btn btn-outline" onClick={openPreferencesManager} whileTap={{ scale: 0.98 }}>
+          <>
+            <button type="button" className="btn btn-outline" onClick={openPreferencesManager}>
               Settings
-            </motion.button>
-            <motion.button type="button" className="btn btn-outline" onClick={topupWallet} whileTap={{ scale: 0.98 }}>
-              Add Funds
-            </motion.button>
-            <motion.button type="button" className="btn btn-primary" onClick={handleLogout} whileTap={{ scale: 0.98 }}>
-              Logout
-            </motion.button>
-          </div>
+            </button>
+            <button type="button" className="btn btn-outline" onClick={topupWallet}>
+              Add funds
+            </button>
+            <button type="button" className="btn btn-primary" onClick={handleLogout}>
+              Sign out
+            </button>
+          </>
         }
       />
 
-      <div className="wrapper page-enter">
-        <motion.div className="dashboard-header" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-          <h1>Company ESG Dashboard</h1>
-          <p>Track your verified plastic carbon credits and participate in active auctions instantly.</p>
-        </motion.div>
+      <div className="wrapper company-dash">
+        <header className="company-dash__intro">
+          <div className="company-dash__intro-text">
+            <p className="section-head__eyebrow">Company workspace</p>
+            <h1 className="company-dash__title">Dashboard</h1>
+            <p className="company-dash__lede">
+              Monitor your wallet, review activity, and bid on verified plastic credits in real time.
+            </p>
+          </div>
+          <div className="company-dash__intro-aside" aria-hidden>
+            <div className="company-dash__intro-card">
+              <span className="company-dash__intro-label">Marketplace</span>
+              <span className="company-dash__intro-value">{listings === null ? '…' : `${listings.length} live`}</span>
+            </div>
+          </div>
+        </header>
 
-        <motion.div className="stats-grid" variants={stagger} initial="hidden" animate="visible">
-          {[
-            { label: 'Wallet Balance', value: dashboard ? `₹${dashboard.wallet_balance.toLocaleString()}` : '…', cls: 'text-success' },
-            { label: 'Total Credits Purchased', value: dashboard ? dashboard.total_credits_purchased_count : '…', cls: 'text-cyan' },
-            { label: 'Total Amount Spent', value: dashboard ? `₹${dashboard.total_amount_spent.toLocaleString()}` : '…', cls: 'text-blue' },
-          ].map((s, i) => (
-            <motion.div
-              key={s.label}
-              className="glass-panel stat-card"
-              variants={{
-                hidden: { opacity: 0, y: 16 },
-                visible: { opacity: 1, y: 0 },
-              }}
-            >
-              <p>{s.label}</p>
-              <h2 className={`stat-value ${s.cls}`}>{s.value}</h2>
-            </motion.div>
+        <section className="company-dash__kpis" aria-label="Key metrics">
+          {kpis.map((k) => (
+            <div key={k.key} className={`company-dash__kpi company-dash__kpi--${k.tone}`}>
+              <div className="company-dash__kpi-icon" />
+              <div className="company-dash__kpi-body">
+                <p className="company-dash__kpi-label">{k.label}</p>
+                <p className={`company-dash__kpi-value company-dash__kpi-value--${k.tone}`}>{k.value}</p>
+                <p className="company-dash__kpi-hint">{k.hint}</p>
+              </div>
+            </div>
           ))}
-        </motion.div>
+        </section>
 
-        <div className="grid two-col">
-          <motion.div className="glass-panel" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
-            <h3 className="mb-1">Notifications</h3>
-            <div className="scroll-panel">
-              {notifications === null && <p className="text-muted">Loading notifications...</p>}
-              {notifications && notifications.length === 0 && <p className="text-muted">No new notifications.</p>}
-              {notifications &&
-                notifications.map((n) => (
-                  <div key={n.id ?? n.created_at} className="list-row">
-                    <p className="list-main">{n.message}</p>
-                    <small className="text-muted">{new Date(n.created_at).toLocaleString()}</small>
+        <section className="company-dash__feeds" aria-label="Activity">
+          <div className="company-dash__feed company-dash__feed--notify">
+            <div className="company-dash__feed-head">
+              <h2>Notifications</h2>
+              <span className="company-dash__feed-badge">
+                {notifications ? notifications.length : '—'}
+              </span>
+            </div>
+            <div className="company-dash__feed-body scroll-panel company-dash__scroll">
+              {notifications === null && <p className="company-dash__empty">Loading…</p>}
+              {notificationFeed && notificationFeed.length === 0 && (
+                <p className="company-dash__empty">No new notifications. You’re up to date.</p>
+              )}
+              {notificationFeed &&
+                notificationFeed.map((n) => (
+                  <div key={n.id ?? n.created_at} className="company-dash__notify-item">
+                    <span className="company-dash__notify-dot" aria-hidden />
+                    <div>
+                      <p className="company-dash__notify-msg">{n.message}</p>
+                      <time className="company-dash__notify-time" dateTime={n.created_at}>
+                        {new Date(n.created_at).toLocaleString()}
+                      </time>
+                    </div>
                   </div>
                 ))}
             </div>
-          </motion.div>
-          <motion.div className="glass-panel" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-            <h3 className="mb-1">Credits Acquired History</h3>
-            <div className="scroll-panel">
-              {transactions === null && <p className="text-muted">Loading history...</p>}
-              {transactions && transactions.length === 0 && <p className="text-muted">No credits purchased yet.</p>}
-              {transactions &&
-                transactions.map((tx) => (
-                  <div key={tx.id ?? tx.listing_id} className="list-row">
-                    <p className="list-main">
-                      <span className="text-success">Won!</span> Listing #{tx.listing_id}
+          </div>
+
+          <div className="company-dash__feed company-dash__feed--history">
+            <div className="company-dash__feed-head">
+              <h2>Credits acquired</h2>
+            </div>
+            <div className="company-dash__feed-body scroll-panel company-dash__scroll">
+              {transactions === null && <p className="company-dash__empty">Loading…</p>}
+              {transactionFeed && transactionFeed.length === 0 && (
+                <p className="company-dash__empty">No purchases yet. Win an auction to see credits here.</p>
+              )}
+              {transactionFeed &&
+                transactionFeed.map((tx) => (
+                  <div key={tx.id ?? tx.listing_id} className="company-dash__tx-card">
+                    <div className="company-dash__tx-top">
+                      <span className="company-dash__tx-tag">Awarded</span>
+                      <span className="company-dash__tx-id">#{tx.listing_id}</span>
+                    </div>
+                    <p className="company-dash__tx-detail">
+                      {tx.listing?.credit?.weight || '—'} kg · {tx.listing?.credit?.waste_type || 'Unknown'}
                     </p>
-                    <p className="list-sub">
-                      {tx.listing?.credit?.weight || '??'} kg of {tx.listing?.credit?.waste_type || 'Unknown'}
-                    </p>
-                    <p className="text-cyan">Amount Paid: ₹{tx.final_price}</p>
-                    <p className="key-badge">
-                      Key: <strong>{tx.listing?.credit?.unique_key || 'Pending Processing'}</strong>
-                    </p>
+                    <p className="company-dash__tx-price">₹{tx.final_price}</p>
+                    <code className="company-dash__tx-key">
+                      {tx.listing?.credit?.unique_key || 'Pending'}
+                    </code>
                   </div>
                 ))}
             </div>
-          </motion.div>
-        </div>
+          </div>
+        </section>
 
-        <motion.div className="dashboard-header" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }}>
-          <h2>Live Marketplace</h2>
-          <p>Browse active listings collected by local fishermen. Verified by AI.</p>
-        </motion.div>
+        <section className="company-dash__market" aria-label="Live auctions">
+          <div className="company-dash__market-head">
+            <div>
+              <p className="section-head__eyebrow">Marketplace</p>
+              <h2 className="company-dash__market-title">Live auctions</h2>
+              <p className="company-dash__market-sub">
+                Listings refresh every 30 seconds.
+              </p>
+            </div>
+          </div>
 
-        <div className="grid marketplace-grid">
-          {listings === null && <p className="text-muted">Loading live auctions...</p>}
-          {listings && listings.length === 0 && <p>No active listings available right now.</p>}
-          {listings &&
-            listings.map((item) => (
-              <CompanyListingCard
-                key={item.id}
-                item={item}
-                bidAmount={bidInputs[item.id] ?? ''}
-                onBidAmount={setBidAmount}
-                onBid={handleBid}
-                onSimClose={handleSimClose}
-                showToast={showToast}
-              />
-            ))}
-        </div>
+          <div className="company-dash__auction-grid">
+            {listings === null && <p className="company-dash__empty company-dash__empty--wide">Loading listings…</p>}
+            {listings && listings.length === 0 && (
+              <p className="company-dash__empty company-dash__empty--wide">No active listings. Check back soon.</p>
+            )}
+            {listings &&
+              listings.map((item) => (
+                <CompanyListingCard
+                  key={item.id}
+                  item={item}
+                  bidAmount={bidInputs[item.id] ?? ''}
+                  onBidAmount={setBidAmount}
+                  onBid={handleBid}
+                  showToast={showToast}
+                />
+              ))}
+          </div>
+        </section>
       </div>
 
       {prefsOpen && (
         <div className="modal-backdrop" role="presentation" onClick={() => setPrefsOpen(false)}>
-          <motion.div
-            className="glass-card modal-card"
-            initial={{ opacity: 0, scale: 0.94, y: 12 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96 }}
+          <div
+            className="glass-card modal-card modal-card--company"
+            role="dialog"
+            aria-labelledby="prefs-title"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2>Email Preferences</h2>
+            <h2 id="prefs-title">Notification preferences</h2>
+            <p className="text-muted small" style={{ marginTop: '0.35rem' }}>
+              Email for invoices and outbid alerts.
+            </p>
             <div className="form-group mt-1">
               <label className="checkbox-row">
                 <input type="checkbox" checked={prefEnabled} onChange={(e) => setPrefEnabled(e.target.checked)} />
-                Enable Email Notifications
+                Enable email notifications
               </label>
             </div>
             <div className="form-group mt-1">
-              <label>Preferred Notifications Email</label>
+              <label>Notifications email</label>
               <input
                 type="email"
                 className="form-control"
-                placeholder="e.g. alerts@company.com"
+                placeholder="alerts@company.com"
                 value={prefEmail}
                 onChange={(e) => setPrefEmail(e.target.value)}
               />
-              <small className="text-muted">Invoices and Outbid alerts will be sent here.</small>
             </div>
             <div className="flex-between mt-2 modal-actions">
               <button type="button" className="btn btn-outline" onClick={() => setPrefsOpen(false)}>
                 Cancel
               </button>
               <button type="button" className="btn btn-primary" onClick={savePreferences}>
-                Save
+                Save changes
               </button>
             </div>
-          </motion.div>
+          </div>
         </div>
       )}
     </>
