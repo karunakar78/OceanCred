@@ -1,59 +1,103 @@
-import React from 'react';
-import { SafeAreaView, ScrollView, View, Text, TouchableOpacity } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { SafeAreaView, ScrollView, RefreshControl, View, Text, TouchableOpacity } from 'react-native';
 import { styles } from '../styles';
 import { C } from '../theme';
-import { WaveHeader, StatCard } from '../components/Shared';
+import { WaveHeader } from '../components/Shared';
+import { mobileApi } from '../api/mobileApi';
 
-export default function WalletScreen({ navigate }) {
-    const history = [
-        { date: 'Apr 01', desc: 'Arabian Sea upload', credits: +52, kg: '4.2 kg' },
-        { date: 'Mar 28', desc: 'Lakshadweep upload', credits: +48, kg: '3.8 kg' },
-        { date: 'Mar 28', desc: 'Sold — Plasticorp Ltd', credits: -48, kg: null },
-        { date: 'Mar 21', desc: 'Kochi Port upload', credits: +74, kg: '6.1 kg' },
-        { date: 'Mar 14', desc: 'Sold — GreenSea Inc', credits: -29, kg: null },
-        { date: 'Mar 14', desc: 'Calicut upload', credits: +29, kg: '2.2 kg' },
-    ];
+function toShortDate(dateIso) {
+    try {
+        return new Date(dateIso).toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
+    } catch {
+        return 'N/A';
+    }
+}
+
+export default function WalletScreen({ navigate, token }) {
+    const [wallet, setWallet] = useState(null);
+    const [transactions, setTransactions] = useState([]);
+    const [refreshing, setRefreshing] = useState(false);
+
+    useEffect(() => {
+        let mounted = true;
+
+        const load = async () => {
+            if (!token) return;
+            try {
+                const [walletRes, txRes] = await Promise.all([
+                    mobileApi.getWallet(token),
+                    mobileApi.getWalletTransactions(token),
+                ]);
+                if (!mounted) return;
+                setWallet(walletRes);
+                setTransactions(txRes?.transactions || []);
+            } catch {
+                if (!mounted) return;
+                setWallet(null);
+                setTransactions([]);
+            }
+        };
+
+        load();
+        return () => {
+            mounted = false;
+        };
+    }, [token]);
+
+    const estimatedValue = useMemo(() => (wallet?.available_credits || 0) * 150, [wallet]);
+
+    const handleRefresh = async () => {
+        if (!token) return;
+        setRefreshing(true);
+        try {
+            const [walletRes, txRes] = await Promise.all([
+                mobileApi.getWallet(token),
+                mobileApi.getWalletTransactions(token),
+            ]);
+            setWallet(walletRes);
+            setTransactions(txRes?.transactions || []);
+        } catch {
+            setWallet(null);
+            setTransactions([]);
+        } finally {
+            setRefreshing(false);
+        }
+    };
 
     return (
         <SafeAreaView style={styles.screen}>
-            <WaveHeader title="My Wallet" subtitle="Ocean Plastic Credits" onBack={() => navigate('result')} />
-            <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 120 }}>
+            <WaveHeader title="My Wallet" subtitle="Sea Plastic Credits" onBack={() => navigate('result')} />
+            <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 120 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}>
                 <View style={styles.balanceCard}>
                     <Text style={styles.balanceLabel}>Available Balance</Text>
                     <View style={styles.balanceRow}>
-                        <Text style={styles.balanceValue}>126</Text>
+                        <Text style={styles.balanceValue}>{wallet?.available_credits ?? 0}</Text>
                         <Text style={styles.balanceUnit}>credits</Text>
                     </View>
-                    <Text style={styles.balanceEst}>≈ ₹18,900 estimated value</Text>
+                    <Text style={styles.balanceEst}>≈ ₹{estimatedValue.toLocaleString('en-IN')} estimated value</Text>
                     <View style={styles.balanceDivider} />
                     <View style={styles.balanceFooterRow}>
                         <View>
                             <Text style={styles.balFooterLabel}>Lifetime Earned</Text>
-                            <Text style={styles.balFooterValue}>253 credits</Text>
+                            <Text style={styles.balFooterValue}>{wallet?.lifetime_earned ?? 0} credits</Text>
                         </View>
                         <View style={{ alignItems: 'flex-end' }}>
                             <Text style={styles.balFooterLabel}>Lifetime Sold</Text>
-                            <Text style={styles.balFooterValue}>127 credits</Text>
+                            <Text style={styles.balFooterValue}>{wallet?.lifetime_sold ?? 0} credits</Text>
                         </View>
                     </View>
                 </View>
 
-                <View style={styles.statsRow}>
-                    <StatCard label="Plastic" value="72" unit="pts" accent={C.cyan} />
-                    <StatCard label="Net/Gear" value="42" unit="pts" accent={C.teal} />
-                    <StatCard label="Mixed" value="12" unit="pts" accent={C.amber} />
-                </View>
-
                 <Text style={styles.sectionTitle}>Transaction History</Text>
 
-                {history.map((h, i) => (
-                    <View key={i} style={styles.txRow}>
+                {transactions.map((h, i) => (
+                    <View key={h.id || i} style={styles.txRow}>
                         <View style={styles.historyDate}>
-                            <Text style={styles.historyDateText}>{h.date}</Text>
+                            <Text style={styles.historyDateText}>{toShortDate(h.date)}</Text>
                         </View>
                         <View style={{ flex: 1 }}>
-                            <Text style={styles.historyType}>{h.desc}</Text>
-                            {h.kg && <Text style={styles.historyMeta}>{h.kg} collected</Text>}
+                            <Text style={styles.historyType}>{h.description}</Text>
+                            {!!h.amount_inr && <Text style={styles.historyMeta}>₹{Math.round(h.amount_inr).toLocaleString('en-IN')} payout</Text>}
                         </View>
                         <Text style={[styles.txAmount, { color: h.credits > 0 ? C.green : C.red }]}>
                             {h.credits > 0 ? '+' : ''}
@@ -61,6 +105,13 @@ export default function WalletScreen({ navigate }) {
                         </Text>
                     </View>
                 ))}
+
+                {!transactions.length && (
+                    <View style={styles.noticeCard}>
+                        <Text style={styles.noticeIcon}>ℹ️</Text>
+                        <Text style={styles.noticeText}>No wallet transactions yet.</Text>
+                    </View>
+                )}
 
                 <TouchableOpacity style={[styles.primaryBtn, { marginTop: 24 }]} onPress={() => navigate('marketplace')}>
                     <Text style={styles.primaryBtnText}>List on Marketplace →</Text>

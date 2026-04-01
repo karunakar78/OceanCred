@@ -1,1 +1,1 @@
-# OceanCred
+# SeaCred

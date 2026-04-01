@@ -1,16 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - OceanCred</title>
+    <title>Admin Dashboard - SeaCred</title>
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body onload="initAdmin()">
 
     <nav class="navbar">
         <div class="flex-between">
-            <div class="nav-brand">OceanCred Admin //</div>
+            <div class="nav-brand">SeaCred Admin //</div>
             <button class="btn btn-outline" onclick="logout()">Secure Logout</button>
         </div>
     </nav>
@@ -47,14 +49,16 @@
         <div class="grid" style="grid-template-columns: 1fr 1fr;">
             <div class="glass-panel animate-fade mt-1">
                 <h3 class="mb-1">Registered Companies</h3>
-                <div id="companies-grid" class="grid" style="grid-template-columns: 1fr; gap: 1rem; max-height: 400px; overflow-y: auto;">
+                <div id="companies-grid" class="grid"
+                    style="grid-template-columns: 1fr; gap: 1rem; max-height: 400px; overflow-y: auto;">
                     <p class="text-muted">Loading companies...</p>
                 </div>
             </div>
 
             <div class="glass-panel animate-fade mt-1">
                 <h3 class="mb-1">Registered Fishermen</h3>
-                <div id="fishermen-grid" class="grid" style="grid-template-columns: 1fr; gap: 1rem; max-height: 400px; overflow-y: auto;">
+                <div id="fishermen-grid" class="grid"
+                    style="grid-template-columns: 1fr; gap: 1rem; max-height: 400px; overflow-y: auto;">
                     <p class="text-muted">Loading fishermen...</p>
                 </div>
             </div>
@@ -65,10 +69,13 @@
                 <h2>Admin Marketplace Simulation</h2>
                 <p>Force close current auctions or generate fresh listings to test bids instantly.</p>
             </div>
-            <button class="btn btn-outline" style="border-color: var(--neon-cyan); color: var(--neon-cyan); margin-bottom: 1rem;" onclick="simulateNewListing()">Create Auction Simulation</button>
+            <button class="btn btn-outline"
+                style="border-color: var(--neon-cyan); color: var(--neon-cyan); margin-bottom: 1rem;"
+                onclick="simulateNewListing()">Create Auction Simulation</button>
         </div>
 
-        <div class="grid" id="admin-marketplace-grid" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));">
+        <div class="grid" id="admin-marketplace-grid"
+            style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));">
             <p class="text-muted">Loading active listings...</p>
         </div>
     </div>
@@ -76,7 +83,7 @@
     <script src="app.js"></script>
     <script>
         function initAdmin() {
-            if(localStorage.getItem('role') !== 'admin') {
+            if (localStorage.getItem('role') !== 'admin') {
                 alert("Unauthorized Access - Admins Only");
                 window.location.href = "index.html";
                 return;
@@ -85,4 +92,5 @@
         }
     </script>
 </body>
+
 </html>

@@ -1,11 +1,92 @@
 import React, { useState } from 'react';
 import { SafeAreaView, ScrollView, View, Text, TouchableOpacity } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import * as Location from 'expo-location';
 import { styles } from '../styles';
 import { C } from '../theme';
 import { WaveHeader } from '../components/Shared';
+import { mobileApi } from '../api/mobileApi';
 
-export default function UploadScreen({ navigate }) {
+export default function UploadScreen({ navigate, token, onUploadComplete }) {
     const [captured, setCaptured] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
+    const [error, setError] = useState('');
+    const [photoFile, setPhotoFile] = useState(null);
+    const [coords, setCoords] = useState(null);
+    const [capturedAt, setCapturedAt] = useState(null);
+
+    const handleCapture = async () => {
+        try {
+            setError('');
+
+            const camPermission = await ImagePicker.requestCameraPermissionsAsync();
+            if (!camPermission.granted) {
+                setError('Camera permission is required to capture waste photo.');
+                return;
+            }
+
+            const locPermission = await Location.requestForegroundPermissionsAsync();
+            if (locPermission.status !== 'granted') {
+                setError('Location permission is required for verified upload.');
+                return;
+            }
+
+            const photo = await ImagePicker.launchCameraAsync({
+                mediaTypes: ['images'],
+                allowsEditing: false,
+                quality: 0.8,
+            });
+
+            if (photo.canceled || !photo.assets?.length) {
+                return;
+            }
+
+            const currentPos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+            const now = new Date();
+            const asset = photo.assets[0];
+
+            setPhotoFile({
+                uri: asset.uri,
+                name: asset.fileName || `capture_${Date.now()}.jpg`,
+                type: asset.mimeType || 'image/jpeg',
+            });
+            setCoords({
+                lat: currentPos.coords.latitude,
+                lng: currentPos.coords.longitude,
+            });
+            setCapturedAt(now.toISOString());
+            setCaptured(true);
+        } catch (e) {
+            setError(e.message || 'Could not open camera.');
+        }
+    };
+
+    const handleSubmit = async () => {
+        if (!captured || !token || !photoFile || !coords || !capturedAt) return;
+
+        try {
+            setSubmitting(true);
+            setError('');
+
+            const response = await mobileApi.uploadWaste({
+                token,
+                photoFile,
+                gps_lat: coords.lat,
+                gps_lng: coords.lng,
+                captured_at: capturedAt,
+                device_hash: `rn-device-${Date.now()}`,
+            });
+
+            if (onUploadComplete) {
+                onUploadComplete(response);
+            }
+            navigate('result');
+        } catch (e) {
+            setError(e.message || 'Upload failed');
+        } finally {
+            setSubmitting(false);
+        }
+    };
 
     return (
         <SafeAreaView style={styles.screen}>
@@ -20,7 +101,7 @@ export default function UploadScreen({ navigate }) {
                             <View style={styles.vfCornerBR} />
                             <Text style={styles.vfIcon}>📷</Text>
                             <Text style={styles.vfText}>Point at collected waste</Text>
-                            <TouchableOpacity style={styles.captureBtn} onPress={() => setCaptured(true)}>
+                            <TouchableOpacity style={styles.captureBtn} onPress={handleCapture}>
                                 <View style={styles.captureBtnInner} />
                             </TouchableOpacity>
                         </>
@@ -35,9 +116,19 @@ export default function UploadScreen({ navigate }) {
                 <Text style={styles.sectionTitle}>Auto-Captured Data</Text>
                 <View style={styles.metaCard}>
                     {[
-                        { icon: '📍', label: 'GPS Location', value: '12.4°N  74.2°E', ok: true },
-                        { icon: '🕐', label: 'Timestamp', value: 'Apr 01, 2026 · 09:42 AM', ok: true },
-                        { icon: '📸', label: 'Photo Hash', value: 'sha256: a3f9...', ok: captured },
+                        {
+                            icon: '📍',
+                            label: 'GPS Location',
+                            value: coords ? `${coords.lat.toFixed(4)}°N  ${coords.lng.toFixed(4)}°E` : '',
+                            ok: !!coords,
+                        },
+                        {
+                            icon: '🕐',
+                            label: 'Timestamp',
+                            value: capturedAt ? new Date(capturedAt).toLocaleString('en-IN') : '',
+                            ok: !!capturedAt,
+                        },
+                        { icon: '📸', label: 'Photo', value: photoFile?.name || '', ok: captured },
                     ].map((m, i) => (
                         <View key={i} style={[styles.metaRow, i < 2 && styles.metaRowBorder]}>
                             <Text style={styles.metaIcon}>{m.icon}</Text>
@@ -61,10 +152,13 @@ export default function UploadScreen({ navigate }) {
 
                 <TouchableOpacity
                     style={[styles.primaryBtn, !captured && styles.primaryBtnDisabled]}
-                    onPress={() => captured && navigate('result')}
+                    onPress={handleSubmit}
                 >
-                    <Text style={styles.primaryBtnText}>{captured ? 'Submit for AI Verification →' : 'Take Photo First'}</Text>
+                    <Text style={styles.primaryBtnText}>
+                        {captured ? (submitting ? 'Submitting...' : 'Submit for AI Verification →') : 'Take Photo First'}
+                    </Text>
                 </TouchableOpacity>
+                {!!error && <Text style={[styles.otpHint, { marginTop: 10 }]}>{error}</Text>}
             </ScrollView>
         </SafeAreaView>
     );

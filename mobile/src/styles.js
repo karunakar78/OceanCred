@@ -15,8 +15,13 @@ export const styles = StyleSheet.create({
     headerTitle: { color: C.textPri, fontSize: 20, fontWeight: '700', letterSpacing: 0.3 },
     headerSub: { color: C.textSec, fontSize: 12, marginTop: 2 },
 
-    loginContainer: { paddingBottom: 60, alignItems: 'center' },
-    logoArea: { alignItems: 'center', paddingTop: 60, paddingBottom: 24 },
+    loginContainer: {
+        flexGrow: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingVertical: 24,
+    },
+    logoArea: { alignItems: 'center', paddingBottom: 24 },
     logoCircle: {
         width: 80, height: 80, borderRadius: 40,
         backgroundColor: C.cyanGlow, borderWidth: 1.5,
@@ -261,6 +266,7 @@ export const styles = StyleSheet.create({
     auctionInfoItem: { flex: 1, padding: 14, alignItems: 'center' },
     auctionInfoLabel: { color: C.textSec, fontSize: 11, marginBottom: 4 },
     auctionInfoValue: { color: C.textPri, fontSize: 16, fontWeight: '700' },
+    auctionInfoSub: { color: C.textSec, fontSize: 10, marginTop: 4 },
     auctionInfoDivider: { width: 0.5, backgroundColor: C.border },
 
     bidRow: {
@@ -294,4 +300,13 @@ export const styles = StyleSheet.create({
     navIconActive: { opacity: 1 },
     navLabel: { color: C.textDim, fontSize: 10, fontWeight: '600' },
     navLabelActive: { color: C.cyan },
+
+    // Modal Styles
+    modalContent: { backgroundColor: C.card, padding: 20 },
+    modalTitle: { fontSize: 18, fontWeight: '700', color: C.textPri, marginBottom: 16 },
+    modalRow: { marginBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    modalLabel: { fontSize: 12, color: C.textSec, fontWeight: '600' },
+    modalValue: { fontSize: 14, color: C.textPri, fontWeight: '600' },
+    dangerBtn: { backgroundColor: C.red, borderRadius: 12, padding: 14, justifyContent: 'center', alignItems: 'center' },
+    dangerBtnText: { color: 'white', fontSize: 14, fontWeight: '700' },
 });

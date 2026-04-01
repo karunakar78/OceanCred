@@ -1,21 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OceanCred - Premium ESG Offset</title>
+    <title>SeaCred - Premium ESG Offset</title>
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
 
     <nav class="navbar">
-        <div class="nav-brand">OceanCred //</div>
+        <div class="nav-brand">SeaCred //</div>
     </nav>
 
     <div class="login-container">
         <div class="glass-panel login-form-wrapper animate-fade">
             <h2 id="form-title" style="margin-bottom: 2rem;">Secure Access</h2>
-            
+
             <form id="auth-form" onsubmit="handleAuth(event)">
                 <div class="form-group" id="name-group" class="hidden" style="display:none;">
                     <label>Company/Admin Name</label>
@@ -26,7 +28,7 @@
                     <label>Email Address</label>
                     <input type="email" id="email" class="form-control" required placeholder="name@company.com">
                 </div>
-                
+
                 <div class="form-group">
                     <label>Password</label>
                     <input type="password" id="password" class="form-control" required placeholder="••••••••">
@@ -40,21 +42,25 @@
                     </select>
                 </div>
 
-                <button type="submit" class="btn btn-primary" style="width:100%" id="submit-btn">Continue to Portal</button>
+                <button type="submit" class="btn btn-primary" style="width:100%" id="submit-btn">Continue to
+                    Portal</button>
             </form>
 
             <div style="text-align:center; margin-top: 1.5rem;">
-                <p>New to OceanCred? <a href="#" id="mode-toggle" class="text-cyan">Register Here</a></p>
-                <p style="margin-top: 1rem; font-size: 0.8rem;"><i><strong class="text-success">Demo Tip:</strong> Use 'admin@oceancred.com' / 'admin123' as Admin role to view Dashboard instantly!</i></p>
+                <p>New to SeaCred? <a href="#" id="mode-toggle" class="text-cyan">Register Here</a></p>
+                <p style="margin-top: 1rem; font-size: 0.8rem;"><i><strong class="text-success">Demo Tip:</strong> Use
+                        'admin@seacred.com' / 'admin123' as Admin role to view Dashboard instantly!</i></p>
             </div>
         </div>
-        
+
         <!-- Public Verification Panel -->
         <div class="glass-panel animate-fade" style="margin-top: 2rem;">
             <h3>🔍 Verify Public Credit</h3>
-            <p style="font-size: 0.9rem; margin-bottom: 1rem;">Enter a Credit Key to publicly verify the authenticity, weight, and allotted company of an OceanCred certificate.</p>
+            <p style="font-size: 0.9rem; margin-bottom: 1rem;">Enter a Credit Key to publicly verify the authenticity,
+                weight, and allotted company of a SeaCred certificate.</p>
             <div class="flex-between">
-                <input type="text" id="verify-key" class="form-control" placeholder="e.g. 9F4E-2B1A-..." style="margin-bottom:0;">
+                <input type="text" id="verify-key" class="form-control" placeholder="e.g. 9F4E-2B1A-..."
+                    style="margin-bottom:0;">
                 <button class="btn btn-outline" onclick="verifyCredit()" style="margin-left: 1rem;">Verify</button>
             </div>
             <div id="verify-result" class="mt-1"></div>
@@ -80,10 +86,10 @@
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const role = document.getElementById('role').value;
-            
+
             document.getElementById('submit-btn').innerText = "Authenticating...";
 
-            if(isLogin) {
+            if (isLogin) {
                 await login(email, password, role);
             } else {
                 const name = document.getElementById('name').value;
@@ -94,20 +100,20 @@
         async function verifyCredit() {
             const key = document.getElementById('verify-key').value;
             const resDiv = document.getElementById('verify-result');
-            
-            if(!key) {
+
+            if (!key) {
                 resDiv.innerHTML = '<p class="text-danger">Please enter a key.</p>';
                 return;
             }
 
             resDiv.innerHTML = '<p class="text-muted">Verifying...</p>';
-            
+
             try {
                 // Public endpoint, no auth needed
                 const res = await fetch(`http://localhost:8080/marketplace/verify/${key}`);
                 const data = await res.json();
-                
-                if(!res.ok) {
+
+                if (!res.ok) {
                     resDiv.innerHTML = `<p class="text-danger">❌ ${data.detail || "Invalid Key"}</p>`;
                 } else {
                     resDiv.innerHTML = `
@@ -120,10 +126,11 @@
                         </div>
                     `;
                 }
-            } catch(e) {
+            } catch (e) {
                 resDiv.innerHTML = `<p class="text-danger">❌ Failed to connect to verification server.</p>`;
             }
         }
     </script>
 </body>
+
 </html>

@@ -1,18 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Company Portal - OceanCred</title>
+    <title>Company Portal - SeaCred</title>
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body onload="initCompany()">
 
     <nav class="navbar">
         <div class="flex-between">
-            <div class="nav-brand">OceanCred //</div>
+            <div class="nav-brand">SeaCred //</div>
             <div>
-                <button class="btn btn-outline" style="margin-right: 1rem;" onclick="openPreferencesManager()">Settings</button>
+                <button class="btn btn-outline" style="margin-right: 1rem;"
+                    onclick="openPreferencesManager()">Settings</button>
                 <button class="btn btn-outline" style="margin-right: 1rem;" onclick="topupWallet()">Add Funds</button>
                 <button class="btn btn-primary" onclick="logout()">Logout</button>
             </div>
@@ -70,7 +73,8 @@
     </div>
 
     <!-- Preferences Modal -->
-    <div id="prefs-modal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 999; justify-content: center; align-items: center;">
+    <div id="prefs-modal" class="modal"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 999; justify-content: center; align-items: center;">
         <div class="glass-card" style="width: 400px; padding: 2rem;">
             <h2>Email Preferences</h2>
             <div class="form-group mt-1">
@@ -93,17 +97,18 @@
     <script src="app.js"></script>
     <script>
         function initCompany() {
-            if(localStorage.getItem('role') !== 'company') {
+            if (localStorage.getItem('role') !== 'company') {
                 alert("Unauthorized Access");
                 window.location.href = "index.html";
                 return;
             }
             loadCompanyDashboard();
             loadMarketplace();
-            
+
             // Auto refresh marketplace every 30s to catch new items
             setInterval(() => { loadMarketplace(); }, 30000);
         }
     </script>
 </body>
+
 </html>

@@ -8,19 +8,23 @@ from .routers import auth, admin, company, marketplace, live_bidding, mobile_api
 
 models.Base.metadata.create_all(bind=database.engine)
 
+
 def create_admin_seed(db: Session):
-    admin_user = db.query(models.User).filter(models.User.email == "admin@oceancred.com").first()
+    admin_user = (
+        db.query(models.User).filter(models.User.email == "admin@seacred.com").first()
+    )
     if not admin_user:
         hashed_pw = dependencies.get_password_hash("admin123")
         admin = models.User(
-            email="admin@oceancred.com",
+            email="admin@seacred.com",
             hashed_password=hashed_pw,
             role="admin",
             name="Platform Admin",
         )
         db.add(admin)
         db.commit()
-        print("Seed data: Admin user created - admin@oceancred.com / admin123")
+        print("Seed data: Admin user created - admin@seacred.com / admin123")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -33,7 +37,8 @@ async def lifespan(app: FastAPI):
     yield
     # Cleanup - runs on shutdown
 
-app = FastAPI(title="OceanCred API", lifespan=lifespan)
+
+app = FastAPI(title="SeaCred API", lifespan=lifespan)
 
 # Allow CORS for frontend calls
 app.add_middleware(
@@ -51,6 +56,9 @@ app.include_router(marketplace.router)
 app.include_router(live_bidding.router)
 app.include_router(mobile_api.router, prefix="/v1")
 
+
 @app.get("/")
 def root():
-    return {"message": "Welcome to OceanCred API. Check out /docs for interactive documentation."}
+    return {
+        "message": "Welcome to SeaCred API. Check out /docs for interactive documentation."
+    }

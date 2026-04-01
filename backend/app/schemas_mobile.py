@@ -1,12 +1,15 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List, Dict
+
 
 class OTPRequest(BaseModel):
     phone: str
 
+
 class OTPVerify(BaseModel):
     phone: str
     otp: str
+
 
 class MobileUser(BaseModel):
     id: str
@@ -14,11 +17,14 @@ class MobileUser(BaseModel):
     phone: str
     location: Optional[str] = None
     verified: bool
+    profile_completed: bool
+
 
 class OTPVerifyResponse(BaseModel):
     access_token: str
     refresh_token: str
     user: MobileUser
+
 
 class UserStats(BaseModel):
     total_credits: int
@@ -26,17 +32,26 @@ class UserStats(BaseModel):
     total_waste_kg: float
     lifetime_earnings_inr: float
 
+
 class ProfileResponse(MobileUser):
     stats: UserStats
+
 
 class ProfileUpdate(BaseModel):
     name: Optional[str] = None
     location: Optional[str] = None
 
+
+class ProfileOnboardingRequest(BaseModel):
+    name: str
+    location: str
+
+
 class WasteItem(BaseModel):
     type: str
     weight_kg: float
     credits: int
+
 
 class AIResult(BaseModel):
     is_real_waste: bool
@@ -48,10 +63,12 @@ class AIResult(BaseModel):
     total_weight_kg: float
     total_credits: int
 
+
 class UploadResponse(BaseModel):
     upload_id: str
     status: str
     ai_result: AIResult
+
 
 class UploadSummary(BaseModel):
     upload_id: str
@@ -61,13 +78,16 @@ class UploadSummary(BaseModel):
     credits: int
     status: str
 
+
 class UploadsListResponse(BaseModel):
     uploads: List[UploadSummary]
+
 
 class WalletBreakdown(BaseModel):
     plastic: int
     net_gear: int
     mixed: int
+
 
 class WalletResponse(BaseModel):
     available_credits: int
@@ -75,9 +95,10 @@ class WalletResponse(BaseModel):
     lifetime_sold: int
     breakdown: WalletBreakdown
 
+
 class TransactionItem(BaseModel):
     id: str
-    type: str # 'credit' | 'debit'
+    type: str  # 'credit' | 'debit'
     description: str
     credits: int
     amount_inr: Optional[float] = None
@@ -85,20 +106,25 @@ class TransactionItem(BaseModel):
     upload_id: Optional[str] = None
     listing_id: Optional[str] = None
 
+
 class TransactionListResponse(BaseModel):
     transactions: List[TransactionItem]
+
 
 class ListingCreateMobile(BaseModel):
     credits: int
     floor_price_inr: float
-    duration_hours: int
+    duration_hours: int = Field(ge=1, le=168)
+
 
 class BidItem(BaseModel):
     bid_id: str
     company: str
     price_per_credit: float
     total_inr: float
+    payout_inr: float
     placed_at: str
+
 
 class ListingDetails(BaseModel):
     listing_id: str
@@ -108,6 +134,7 @@ class ListingDetails(BaseModel):
     status: str
     bids: Optional[List[BidItem]] = None
     top_bid: Optional[BidItem] = None
+
 
 class AcceptBidRequest(BaseModel):
     bid_id: str
