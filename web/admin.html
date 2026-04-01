@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - OceanCred</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body onload="initAdmin()">
+
+    <nav class="navbar">
+        <div class="flex-between">
+            <div class="nav-brand">OceanCred Admin //</div>
+            <button class="btn btn-outline" onclick="logout()">Secure Logout</button>
+        </div>
+    </nav>
+
+    <div class="wrapper">
+        <div class="dashboard-header animate-fade">
+            <h1>Command Center</h1>
+            <p>Platform health, total metrics, and administration.</p>
+        </div>
+
+        <div class="stats-grid animate-fade" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+            <div class="glass-card text-center">
+                <p>Total Revenue</p>
+                <h2 class="stat-value text-success" id="stat-revenue">₹0.00</h2>
+            </div>
+            <div class="glass-card text-center">
+                <p>Credits Gen (kg)</p>
+                <h2 class="stat-value text-cyan" id="stat-credits">0</h2>
+            </div>
+            <div class="glass-card text-center">
+                <p>Active Auctions</p>
+                <h2 class="stat-value text-danger" id="stat-auctions">0</h2>
+            </div>
+            <div class="glass-card text-center">
+                <p>Total Companies</p>
+                <h2 class="stat-value text-blue" id="stat-companies">0</h2>
+            </div>
+            <div class="glass-card text-center">
+                <p>Total Fishermen</p>
+                <h2 class="stat-value text-muted" id="stat-fishermen">0</h2>
+            </div>
+        </div>
+
+        <div class="grid" style="grid-template-columns: 1fr 1fr;">
+            <div class="glass-panel animate-fade mt-1">
+                <h3 class="mb-1">Registered Companies</h3>
+                <div id="companies-grid" class="grid" style="grid-template-columns: 1fr; gap: 1rem; max-height: 400px; overflow-y: auto;">
+                    <p class="text-muted">Loading companies...</p>
+                </div>
+            </div>
+
+            <div class="glass-panel animate-fade mt-1">
+                <h3 class="mb-1">Registered Fishermen</h3>
+                <div id="fishermen-grid" class="grid" style="grid-template-columns: 1fr; gap: 1rem; max-height: 400px; overflow-y: auto;">
+                    <p class="text-muted">Loading fishermen...</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex-between dashboard-header animate-fade" style="margin-top: 2rem; align-items: flex-end;">
+            <div>
+                <h2>Admin Marketplace Simulation</h2>
+                <p>Force close current auctions or generate fresh listings to test bids instantly.</p>
+            </div>
+            <button class="btn btn-outline" style="border-color: var(--neon-cyan); color: var(--neon-cyan); margin-bottom: 1rem;" onclick="simulateNewListing()">Create Auction Simulation</button>
+        </div>
+
+        <div class="grid" id="admin-marketplace-grid" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));">
+            <p class="text-muted">Loading active listings...</p>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        function initAdmin() {
+            if(localStorage.getItem('role') !== 'admin') {
+                alert("Unauthorized Access - Admins Only");
+                window.location.href = "index.html";
+                return;
+            }
+            loadAdminDashboard();
+        }
+    </script>
+</body>
+</html>
