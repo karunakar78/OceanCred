@@ -4,7 +4,6 @@ import { styles } from '../styles';
 import { C } from '../theme';
 import { WaveHeader } from '../components/Shared';
 import { mobileApi } from '../api/mobileApi';
-import { clearAuctionNotifications, scheduleAuctionNotifications } from '../services/auctionNotificationScheduler';
 
 export default function MarketplaceScreen({ navigate, token }) {
     const [credits, setCredits] = useState('');
@@ -65,15 +64,6 @@ export default function MarketplaceScreen({ navigate, token }) {
         };
     }, [token]);
 
-    useEffect(() => {
-        if (listed && listingId && listingDetails?.expires_at) {
-            scheduleAuctionNotifications(listingId, listingDetails.expires_at);
-            lastScheduledListingRef.current = listingId;
-        } else if (!listed && lastScheduledListingRef.current) {
-            clearAuctionNotifications(lastScheduledListingRef.current);
-            lastScheduledListingRef.current = null;
-        }
-    }, [listed, listingId, listingDetails?.expires_at]);
 
     const bids = useMemo(() => {
         const mapped = (listingDetails?.bids || []).map((b, i) => ({
@@ -129,7 +119,6 @@ export default function MarketplaceScreen({ navigate, token }) {
         try {
             setLoading(true);
             await mobileApi.cancelListing(token, listingId);
-            await clearAuctionNotifications(listingId);
             lastScheduledListingRef.current = null;
             setListed(false);
             setListingDetails(null);
@@ -146,7 +135,6 @@ export default function MarketplaceScreen({ navigate, token }) {
         try {
             setLoading(true);
             await mobileApi.acceptBid(token, listingId, bids[0].bidId);
-            await clearAuctionNotifications(listingId);
             lastScheduledListingRef.current = null;
             setHint('Top bid accepted successfully.');
             setListed(false);

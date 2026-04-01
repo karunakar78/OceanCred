@@ -5,6 +5,7 @@ import { styles } from '../styles';
 import { C } from '../theme';
 import { WaveHeader, Tag, StatCard } from '../components/Shared';
 import { mobileApi } from '../api/mobileApi';
+import { getPendingOfflineCount, flushOfflineQueue } from '../services/offlineUploadQueue';
 
 function formatShortDate(dateIso) {
     try {
@@ -41,8 +42,10 @@ function UploadStatusPill({ status }) {
 export default function ProfileScreen({ token, user, onLogout }) {
     const [profile, setProfile] = useState(null);
     const [uploads, setUploads] = useState([]);
+    const [offlineCount, setOfflineCount] = useState(0);
     const [locationMessage, setLocationMessage] = useState('');
     const [refreshing, setRefreshing] = useState(false);
+    const [isSyncing, setIsSyncing] = useState(false);
     const [selectedUpload, setSelectedUpload] = useState(null);
     const [unlistLoading, setUnlistLoading] = useState(false);
 
@@ -52,13 +55,15 @@ export default function ProfileScreen({ token, user, onLogout }) {
         const load = async () => {
             if (!token) return;
             try {
-                const [profileRes, uploadsRes] = await Promise.all([
+                const [profileRes, uploadsRes, count] = await Promise.all([
                     mobileApi.getProfile(token),
                     mobileApi.getUploads(token),
+                    getPendingOfflineCount(),
                 ]);
                 if (!mounted) return;
                 setProfile(profileRes);
                 setUploads(uploadsRes?.uploads || []);
+                setOfflineCount(count);
             } catch {
                 if (!mounted) return;
                 setProfile(null);
@@ -120,12 +125,14 @@ export default function ProfileScreen({ token, user, onLogout }) {
         if (!token) return;
         setRefreshing(true);
         try {
-            const [profileRes, uploadsRes] = await Promise.all([
+            const [profileRes, uploadsRes, count] = await Promise.all([
                 mobileApi.getProfile(token),
                 mobileApi.getUploads(token),
+                getPendingOfflineCount()
             ]);
             setProfile(profileRes);
             setUploads(uploadsRes?.uploads || []);
+            setOfflineCount(count || 0);
         } catch {
             setProfile(null);
             setUploads([]);
@@ -147,6 +154,17 @@ export default function ProfileScreen({ token, user, onLogout }) {
             console.log('Unlist error:', e.message);
         } finally {
             setUnlistLoading(false);
+        }
+    };
+
+    const handleSync = async () => {
+        if (!token) return;
+        setIsSyncing(true);
+        try {
+            await flushOfflineQueue(token);
+            await handleRefresh();
+        } finally {
+            setIsSyncing(false);
         }
     };
 
@@ -175,6 +193,17 @@ export default function ProfileScreen({ token, user, onLogout }) {
                         accent={C.amber}
                     />
                 </View>
+
+                {offlineCount > 0 && (
+                    <View style={[styles.noticeCard, { marginBottom: 16, backgroundColor: C.amber + '20' }]}>
+                        <Text style={{ color: C.amber, fontSize: 16, marginBottom: 8, fontWeight: 'bold' }}>
+                            ⚠️ {offlineCount} capture{offlineCount > 1 ? 's' : ''} saved offline
+                        </Text>
+                        <TouchableOpacity style={[styles.primaryBtn, { backgroundColor: C.amber, marginTop: 0 }]} onPress={handleSync} disabled={isSyncing}>
+                            <Text style={styles.primaryBtnText}>{isSyncing ? 'Syncing...' : 'Sync Now'}</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
 
                 <Text style={styles.sectionTitle}>Upload History</Text>
 

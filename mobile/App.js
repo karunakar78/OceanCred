@@ -3,12 +3,9 @@ import { Platform, StatusBar, View } from 'react-native';
 import { C } from './src/theme';
 import { BottomNav } from './src/components/Shared';
 import { mobileApi } from './src/api/mobileApi';
-import { ensureNotificationSetup } from './src/services/notifications';
-import {
-  clearMarketplaceNotificationSnapshot,
-  startMarketplaceNotificationsPoller,
-} from './src/services/marketplaceNotificationsPoller';
-import { registerExpoPushTokenForUser } from './src/services/pushRegistration';
+
+import NetInfo from '@react-native-community/netinfo';
+import { flushOfflineQueue } from './src/services/offlineUploadQueue';
 import LoginScreen from './src/screens/LoginScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import UploadScreen from './src/screens/UploadScreen';
@@ -48,9 +45,6 @@ export default function App() {
     } catch {
       // Even on network failure, clear local session.
     }
-
-    await clearMarketplaceNotificationSnapshot();
-
     setSession({
       accessToken: null,
       refreshToken: null,
@@ -74,25 +68,17 @@ export default function App() {
     };
   }, [session.accessToken]);
 
-  /** Local + scheduled notifications; poller compares API state while the app runs (no push server). */
   useEffect(() => {
-    if (Platform.OS === 'web' || !session.accessToken) return undefined;
+    if (!session.accessToken) return;
 
-    let cancelled = false;
-    let stopPoller = () => {};
+    flushOfflineQueue(session.accessToken);
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      if (state.isConnected && state.isInternetReachable) {
+        flushOfflineQueue(session.accessToken);
+      }
+    });
 
-    (async () => {
-      await ensureNotificationSetup();
-      if (cancelled) return;
-      await registerExpoPushTokenForUser(session.accessToken);
-      if (cancelled) return;
-      stopPoller = startMarketplaceNotificationsPoller(session.accessToken);
-    })();
-
-    return () => {
-      cancelled = true;
-      stopPoller();
-    };
+    return () => unsubscribe();
   }, [session.accessToken]);
 
   const renderScreen = () => {

@@ -1,0 +1,13 @@
+@echo off
+echo Starting OceanCred Services...
+
+echo Starting Backend...
+start cmd /k "cd backend && call ..\venv\Scripts\activate.bat && python run.py"
+
+echo Starting Web Application...
+start cmd /k "cd web && npm run dev"
+
+echo Starting Mobile Application...
+start cmd /k "cd mobile && npm start"
+
+echo All services started in separate command windows!

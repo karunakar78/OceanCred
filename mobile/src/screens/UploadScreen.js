@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { SafeAreaView, ScrollView, View, Text, TouchableOpacity } from 'react-native';
+import { SafeAreaView, ScrollView, View, Text, TouchableOpacity, Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { styles } from '../styles';
@@ -7,6 +7,8 @@ import { C } from '../theme';
 import { WaveHeader } from '../components/Shared';
 import LocationPicker from '../components/LocationPicker';
 import { mobileApi } from '../api/mobileApi';
+import { enqueueOfflineUpload } from '../services/offlineUploadQueue';
+import NetInfo from '@react-native-community/netinfo';
 
 export default function UploadScreen({ navigate, token, onUploadComplete }) {
     const [lockedCoords, setLockedCoords] = useState(null);
@@ -70,7 +72,7 @@ export default function UploadScreen({ navigate, token, onUploadComplete }) {
             setSubmitting(true);
             setError('');
 
-            const response = await mobileApi.uploadWaste({
+            const uploadPayload = {
                 token,
                 photoFile,
                 gps_lat: coords.lat,
@@ -79,14 +81,40 @@ export default function UploadScreen({ navigate, token, onUploadComplete }) {
                 locked_lng: lockedCoords.lng,
                 captured_at: capturedAt,
                 device_hash: `rn-device-${Date.now()}`,
-            });
+            };
+
+            const netState = await NetInfo.fetch();
+            if (!netState.isConnected || !netState.isInternetReachable) {
+                await enqueueOfflineUpload(uploadPayload);
+                Alert.alert('Saved Offline', 'Your capture was saved and will be uploaded when you have a good internet connection.');
+                navigate('profile');
+                return;
+            }
+
+            const response = await mobileApi.uploadWaste(uploadPayload);
 
             if (onUploadComplete) {
                 onUploadComplete({ ...response, coords });
             }
             navigate('result');
         } catch (e) {
-            setError(e.message || 'Upload failed');
+            if (e.message && e.message.includes('Network request failed')) {
+                const uploadPayload = {
+                    token,
+                    photoFile,
+                    gps_lat: coords.lat,
+                    gps_lng: coords.lng,
+                    locked_lat: lockedCoords.lat,
+                    locked_lng: lockedCoords.lng,
+                    captured_at: capturedAt,
+                    device_hash: `rn-device-${Date.now()}`,
+                };
+                await enqueueOfflineUpload(uploadPayload);
+                Alert.alert('Saved Offline', 'Network failed during upload. Your capture will be automatically synced when you are back online.');
+                navigate('profile');
+            } else {
+                setError(e.message || 'Upload failed');
+            }
         } finally {
             setSubmitting(false);
         }
