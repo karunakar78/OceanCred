@@ -128,31 +128,18 @@ If QR is not visible, press ? in the Expo terminal to see available commands.
 
 ### Mobile App
 
-**Profile Screen** - User profile with verification badge, total credits, waste collected, and earnings summary
-![Profile Screen](screenshots/profile.png)
-
-**Upload Waste Screen** - Tamper-proof upload with photo, GPS location, and timestamp capture
-![Upload Waste](screenshots/upload_waste.png)
-
-**Select Area Screen** - Map-based cleaning zone selection with circular radius indicator
-![Select Area](screenshots/select_area.png)
-
-**Upload Complete** - Confirmation showing captured photo and auto-captured GPS + timestamp data
-![Upload Complete](screenshots/upload_complete.png)
-
-**My Wallet** - Sea Plastic Credits balance and transaction history
-![My Wallet](screenshots/wallet.png)
-
-**Marketplace** - Live auction interface for ESG credit listings with real-time bidding
-![Marketplace](screenshots/marketplace.png)
-
-**Auction Winner Notification** - Email notification with invoice attachment for won listings
-![Auction Notification](screenshots/auction_notification.png)
+| | | | |
+|---|---|---|---|
+| ![Auction Notification](screenshots/img-auction-notification.jpeg) | ![Upload Waste](screenshots/img-upload-waste.jpeg) | ![Select Area](screenshots/img-select-area.jpeg) | ![Wallet](screenshots/img-wallet.jpeg) |
+| **Auction Winner Notification** | **Upload Waste Screen** | **Select Area Screen** | **My Wallet** |
+| | | | |
+| ![Upload Complete](screenshots/img-upload-complete.jpeg) | ![Marketplace](screenshots/img-marketplace.jpeg) | ![Profile](screenshots/img-profile.jpeg) | |
+| **Upload Complete** | **Marketplace** | **Profile Screen** | |
 
 ### Web App
 
 **Company Dashboard** - High-level overview with wallet balance, credits purchased, total spent, and wins
-![Company Dashboard](screenshots/dashboard.png)
+![Company Dashboard](screenshots/web-ss-dashboard.jpeg)
 
 ## Troubleshooting
 
