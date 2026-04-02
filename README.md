@@ -11,6 +11,23 @@ OceanCred includes three apps:
 - Node.js 18+ and npm
 - npx available (comes with npm)
 
+## Environment Configuration
+
+Before running the application, you must set up the necessary environment variables for the backend. Create a `.env` file in the `backend` directory (`backend/.env`) with the following required parameters (replace the dummy values with your actual credentials):
+
+```env
+# Gemini API Key for AI Image Analysis
+GEMINI_API_KEY=your_gemini_api_key_here
+
+# SMTP Configuration for Email Notifications
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your_email@gmail.com
+SMTP_PASSWORD=your_app_password
+SMTP_FROM_EMAIL=your_email@gmail.com
+SMTP_USE_TLS=true
+```
+
 ## First-Time Setup
 
 ### 1) Backend setup
@@ -50,13 +67,25 @@ cd ..
 
 ## Run Entire Project (Recommended)
 
-From project root:
+From project root, you can start all services together. 
 
+**For macOS/Linux:**
 ```bash
 python3 run.py
 ```
 
-This starts all services together:
+**For Windows:**
+You can either run the Python launcher:
+```cmd
+python run.py
+```
+Or simply use the provided batch script:
+```cmd
+start.bat
+```
+*(Alternatively, you can run `.\start.ps1` in PowerShell)*
+
+This starts all services:
 - Backend API on http://0.0.0.0:8080
 - Web app on http://localhost:5173
 - Mobile app with Expo via npx expo start
