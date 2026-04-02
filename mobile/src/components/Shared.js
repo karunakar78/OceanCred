@@ -3,17 +3,20 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { styles } from '../styles';
 import { C } from '../theme';
 
-export const WaveHeader = ({ title, subtitle, onBack }) => (
-    <View style={styles.header}>
-        {onBack && (
-            <TouchableOpacity onPress={onBack} style={styles.backBtn}>
-                <Text style={styles.backArrow}>←</Text>
-            </TouchableOpacity>
-        )}
-        <View style={onBack ? { marginLeft: 8 } : {}}>
-            <Text style={styles.headerTitle}>{title}</Text>
-            {subtitle && <Text style={styles.headerSub}>{subtitle}</Text>}
+export const WaveHeader = ({ title, subtitle, onBack, rightComponent }) => (
+    <View style={[styles.header, rightComponent ? { justifyContent: 'space-between' } : {}]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            {onBack && (
+                <TouchableOpacity onPress={onBack} style={styles.backBtn}>
+                    <Text style={styles.backArrow}>←</Text>
+                </TouchableOpacity>
+            )}
+            <View style={onBack ? { marginLeft: 8 } : {}}>
+                <Text style={styles.headerTitle}>{title}</Text>
+                {subtitle && <Text style={styles.headerSub}>{subtitle}</Text>}
+            </View>
         </View>
+        {rightComponent && <View>{rightComponent}</View>}
     </View>
 );
 

@@ -170,7 +170,15 @@ export default function ProfileScreen({ token, user, onLogout }) {
 
     return (
         <SafeAreaView style={styles.screen}>
-            <WaveHeader title="Profile" subtitle={`${displayName} · ${displayLocation}`} />
+            <WaveHeader 
+                title="Profile" 
+                subtitle={`${displayName} · ${displayLocation}`} 
+                rightComponent={
+                    <TouchableOpacity onPress={onLogout} style={{ padding: 4 }}>
+                        <Text style={{ color: C.red, fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 }}>Logout</Text>
+                    </TouchableOpacity>
+                }
+            />
             <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 24 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}>
                 <View style={styles.profileCard}>
                     <View style={styles.avatarRing}>
@@ -226,13 +234,8 @@ export default function ProfileScreen({ token, user, onLogout }) {
                 ))}
 
                 {!!locationMessage && <Text style={[styles.otpHint, { marginTop: 10, textAlign: 'center' }]}>{locationMessage}</Text>}
-            </ScrollView>
 
-            <View style={{ padding: 16, backgroundColor: '#0b1120', borderTopWidth: 1, borderColor: '#1E293B' }}>
-                <TouchableOpacity style={[styles.secondaryBtn, { marginTop: 0 }]} onPress={onLogout}>
-                    <Text style={styles.secondaryBtnText}>Logout</Text>
-                </TouchableOpacity>
-            </View>
+            </ScrollView>
 
             <Modal
                 visible={!!selectedUpload}
