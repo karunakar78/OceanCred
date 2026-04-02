@@ -15,11 +15,11 @@ GOOGLE_API_KEY = os.getenv("GEMINI_API_KEY")
 # ==============================================================================
 # TEST MODE: Set to True to allow random photos and bypass Gemini API strictly
 # ==============================================================================
-ENABLE_TEST_MODE = True
+ENABLE_TEST_MODE = False
 
 def analyze_waste_image(file_path: str) -> dict:
     """
-    Analyzes an image using Gemini 1.5 Flash to determine if it's ocean waste.
+    Analyzes an image using Gemini 2.5 Flash to determine if it's ocean waste.
     Returns:
     {
         "is_waste": bool,
@@ -46,7 +46,7 @@ def analyze_waste_image(file_path: str) -> dict:
 
     try:
         genai.configure(api_key=GOOGLE_API_KEY)
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-2.5-flash')
         
         img = Image.open(file_path)
         
