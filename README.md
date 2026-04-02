@@ -1,6 +1,6 @@
 # SeaCred
 
-OceanCred includes three apps:
+SeaCred includes three apps:
 - Backend API in backend
 - Web app in web
 - Mobile app in mobile
